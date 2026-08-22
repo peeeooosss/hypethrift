@@ -20,13 +20,13 @@ const CATEGORIES = [
 ];
 
 const DEMO_LISTINGS = [
-  { title: "Jordan 1 Chicago (2015)", slug: "sneakers", emoji: "👟", bg: "#FF66B2", startingBid: 18500, bids: 42, viewers: 128, hot: true, verified: true, condition: "EXCELLENT", status: "ACTIVE" },
-  { title: "Yeezy 350 Zebra", slug: "sneakers", emoji: "👟", bg: "#33CCFF", startingBid: 12400, bids: 28, viewers: 89, hot: false, verified: true, condition: "GOOD", status: "ACTIVE" },
-  { title: "Dunk Low Panda", slug: "sneakers", emoji: "👟", bg: "#D4FF33", startingBid: 8200, bids: 56, viewers: 210, hot: true, verified: false, condition: "EXCELLENT", status: "ACTIVE" },
-  { title: "Supreme Box Logo Tee", slug: "streetwear", emoji: "👕", bg: "#FF66B2", startingBid: 5600, bids: 34, viewers: 156, hot: true, verified: true, condition: "LIKE_NEW", status: "ACTIVE" },
-  { title: "Vintage Fendi Baguette", slug: "bags", emoji: "👜", bg: "#D4FF33", startingBid: 12800, bids: 52, viewers: 234, hot: true, verified: true, condition: "GOOD", status: "PENDING_REVIEW" },
-  { title: "Chrome Hearts Ring", slug: "jewelry", emoji: "💍", bg: "#33CCFF", startingBid: 7500, bids: 31, viewers: 112, hot: false, verified: true, condition: "NEW", status: "PENDING_REVIEW" },
-  { title: "North Face Nuptse 1996", slug: "outerwear", emoji: "🧥", bg: "#33CCFF", startingBid: 8900, bids: 47, viewers: 201, hot: true, verified: true, condition: "EXCELLENT", status: "ACTIVE" },
+  { title: "Jordan 1 Chicago (2015)", slug: "sneakers", emoji: "👟", bg: "#FF66B2", startingBid: 18500, bids: 42, viewers: 128, hot: true, verified: true, condition: "EXCELLENT", status: "ACTIVE", size: "UK 9.5" },
+  { title: "Yeezy 350 Zebra", slug: "sneakers", emoji: "👟", bg: "#33CCFF", startingBid: 12400, bids: 28, viewers: 89, hot: false, verified: true, condition: "GOOD", status: "ACTIVE", size: "UK 8.5" },
+  { title: "Dunk Low Panda", slug: "sneakers", emoji: "👟", bg: "#D4FF33", startingBid: 8200, bids: 56, viewers: 210, hot: true, verified: false, condition: "EXCELLENT", status: "ACTIVE", size: "UK 9" },
+  { title: "Supreme Box Logo Tee", slug: "streetwear", emoji: "👕", bg: "#FF66B2", startingBid: 5600, bids: 34, viewers: 156, hot: true, verified: true, condition: "LIKE_NEW", status: "ACTIVE", size: "L" },
+  { title: "Vintage Fendi Baguette", slug: "bags", emoji: "👜", bg: "#D4FF33", startingBid: 12800, bids: 52, viewers: 234, hot: true, verified: true, condition: "GOOD", status: "PENDING_REVIEW", size: "One Size" },
+  { title: "Chrome Hearts Ring", slug: "jewelry", emoji: "💍", bg: "#33CCFF", startingBid: 7500, bids: 31, viewers: 112, hot: false, verified: true, condition: "NEW", status: "PENDING_REVIEW", size: "One Size" },
+  { title: "North Face Nuptse 1996", slug: "outerwear", emoji: "🧥", bg: "#33CCFF", startingBid: 8900, bids: 47, viewers: 201, hot: true, verified: true, condition: "EXCELLENT", status: "ACTIVE", size: "XL" },
 ];
 
 async function main() {
@@ -68,7 +68,7 @@ async function main() {
   for (const l of DEMO_LISTINGS) {
     await prisma.listing.upsert({
       where: { id: `seed-${l.title}` },
-      update: { currentBid: l.startingBid, status: l.status as any, endsAt },
+      update: { currentBid: l.startingBid, status: l.status as any, size: l.size as any, endsAt },
       create: {
         id: `seed-${l.title}`,
         title: l.title,
@@ -82,8 +82,9 @@ async function main() {
         status: l.status as any,
         verified: l.verified,
         hot: l.hot,
-        condition: l.condition as any,
-        endsAt,
+         condition: l.condition as any,
+         size: l.size as any,
+         endsAt,
       },
     });
   }

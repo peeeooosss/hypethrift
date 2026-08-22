@@ -47,6 +47,11 @@ export default async function LiveAuctionsStrip() {
                   <span className="font-black text-lg block">{money(l.currentBid ?? l.startingBid)}</span>
                   <span className="text-xs uppercase font-black text-gray-500">{l.bidCount} bids</span>
                 </div>
+                {l.size && (
+                  <span className="mt-1 text-center text-xs font-black uppercase bg-ink/5 border border-ink/20 rounded-full py-1 px-2 block">
+                    {l.size}
+                  </span>
+                )}
                 <div className="mt-2 text-center text-xs font-black text-bubblegum">{endsIn(mins)} left</div>
               </div>
             </Link>

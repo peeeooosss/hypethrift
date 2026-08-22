@@ -158,9 +158,10 @@ model Listing {
   bids     Bid[]
   order    Order?
 
-  @@index([status])
-  @@index([categoryId])
-  @@index([sellerId])
+   @@index([status])
+   @@index([categoryId])
+   @@index([sellerId])
+   @@index([size])
 }
 
 enum ListingCondition {

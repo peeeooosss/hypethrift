@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import SizeFilter from "@/components/listing/SizeFilter";
 
 function money(n: number | null | undefined) {
   if (n == null) return "—";
@@ -17,14 +18,17 @@ export const revalidate = 0;
 export default async function ListingsIndexPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; cat?: string }>;
+  searchParams: Promise<{ q?: string; cat?: string; sizes?: string }>;
 }) {
-  const { q, cat } = await searchParams;
+  const { q, cat, sizes: sizesParam } = await searchParams;
+  const selectedSizes = sizesParam ? sizesParam.split(",").filter(Boolean) : [];
+  const effectiveCat = cat && cat !== "all" ? cat : "";
   const where = {
     status: "ACTIVE" as const,
     endsAt: { gt: new Date() },
     ...(q && { title: { contains: q, mode: "insensitive" as const } }),
-    ...(cat && cat !== "all" && { category: { slug: cat } }),
+    ...(effectiveCat && { category: { slug: effectiveCat } }),
+    ...(selectedSizes.length > 0 && { size: { in: selectedSizes } }),
   };
 
   const [listings, categories] = await Promise.all([
@@ -46,7 +50,7 @@ export default async function ListingsIndexPage({
             <Link
               href="/listings"
               className={`text-xs font-black uppercase px-3 py-1 rounded-full border-2 border-ink ${
-                !cat || cat === "all" ? "bg-ink text-white" : "bg-white text-ink"
+                !effectiveCat ? "bg-ink text-white" : "bg-white text-ink"
               }`}
             >
               All
@@ -54,9 +58,9 @@ export default async function ListingsIndexPage({
             {categories.map((c) => (
               <Link
                 key={c.id}
-                href={`/listings?cat=${c.slug}`}
+                href={`/listings?cat=${c.slug}${selectedSizes.length ? `&sizes=${selectedSizes.join(",")}` : ""}`}
                 className={`text-xs font-black uppercase px-3 py-1 rounded-full border-2 border-ink ${
-                  cat === c.slug ? "bg-ink text-white" : "bg-white text-ink"
+                  effectiveCat === c.slug ? "bg-ink text-white" : "bg-white text-ink"
                 }`}
               >
                 {c.emoji} {c.name}
@@ -64,6 +68,8 @@ export default async function ListingsIndexPage({
             ))}
           </div>
         </div>
+
+        {effectiveCat && <SizeFilter categorySlug={effectiveCat} />}
 
         {listings.length === 0 ? (
           <p className="font-bold text-gray-500 uppercase">No live auctions right now.</p>
@@ -76,12 +82,17 @@ export default async function ListingsIndexPage({
                   <div className="bg-white border-2 border-ink shadow-brut-lg rounded-3xl p-5 aspect-[4/5] flex flex-col">
                     <div className="flex-1 flex items-center justify-center text-5xl mb-3">{l.category.emoji}</div>
                     <h3 className="font-black text-sm uppercase text-center mb-2 line-clamp-2">{l.title}</h3>
-                    <div className="text-center">
-                      <span className="font-black block text-lg">{money(l.currentBid ?? l.startingBid)}</span>
-                      <span className="text-xs uppercase font-black text-gray-500">
-                        {l.bidCount} bids · {endsIn(mins)} left
-                      </span>
-                    </div>
+                     <div className="text-center">
+                       <span className="font-black block text-lg">{money(l.currentBid ?? l.startingBid)}</span>
+                       <span className="text-xs uppercase font-black text-gray-500">
+                         {l.bidCount} bids · {endsIn(mins)} left
+                       </span>
+                     </div>
+                     {l.size && (
+                       <div className="mt-2 text-center">
+                         <span className="text-xs font-black uppercase bg-ink/5 border border-ink/20 rounded-full py-1 px-2">{l.size}</span>
+                       </div>
+                     )}
                   </div>
                 </Link>
               );

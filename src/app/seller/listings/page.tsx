@@ -53,6 +53,7 @@ export default async function SellerListingsPage() {
                 <th className="pb-3 text-xs uppercase font-black text-gray-500">Item</th>
                 <th className="pb-3 text-xs uppercase font-black text-gray-500">Bid</th>
                 <th className="pb-3 text-xs uppercase font-black text-gray-500">Condition</th>
+                <th className="pb-3 text-xs uppercase font-black text-gray-500">Size</th>
                 <th className="pb-3 text-xs uppercase font-black text-gray-500">Status</th>
                 <th className="pb-3 text-xs uppercase font-black text-right">Actions</th>
               </tr>
@@ -72,6 +73,7 @@ export default async function SellerListingsPage() {
                     </td>
                     <td className="py-3 text-sm font-black">₹{l.currentBid ?? l.startingBid}</td>
                     <td className="py-3 text-sm text-gray-600">{l.condition?.replace("_", " ") ?? "—"}</td>
+                    <td className="py-3 text-sm font-black uppercase">{l.size ?? "—"}</td>
                     <td className="py-3">
                       <span className={`inline-block px-2 py-1 rounded-xl text-xs font-black ${s.color}`}>
                         {s.label}

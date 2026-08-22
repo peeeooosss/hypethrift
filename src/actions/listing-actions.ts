@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { sizeIsValidForCategory } from "@/lib/sizes";
 
 type ListingConditionType = "NEW" | "LIKE_NEW" | "EXCELLENT" | "GOOD" | "FAIR";
 
@@ -25,7 +26,7 @@ const listingSchema = z.object({
   categoryId: z.string().min(1, "Select a category"),
   startingBid: z.coerce.number().int().min(1, "Starting bid is required"),
   reservePrice: z.coerce.number().int().optional().or(z.literal("").transform(() => undefined)),
-  size: z.string().optional(),
+  size: z.string().min(1, "Select a size"),
   condition: z.enum(["NEW", "LIKE_NEW", "EXCELLENT", "GOOD", "FAIR"]).optional(),
   duration: z.enum(["1", "4", "12", "24", "48"]).transform(Number),
   images: z.array(z.string().url()).min(1, "Upload at least one image"),
@@ -57,20 +58,26 @@ export async function createListing(prevState: { error?: string; success?: boole
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
-  const {
-    title,
-    description,
-    categoryId,
-    startingBid,
-    reservePrice,
-    size,
-    condition,
-    duration,
-    images: imgs,
-    action,
-  } = parsed.data;
+   const {
+     title,
+     description,
+     categoryId,
+     startingBid,
+     reservePrice,
+     size,
+     condition,
+     duration,
+     images: imgs,
+     action,
+   } = parsed.data;
 
-  const status: "DRAFT" | "PENDING_REVIEW" =
+   const category = await prisma.category.findUnique({ where: { id: categoryId }, select: { slug: true } });
+   if (!category) return { error: "Invalid category" };
+   if (!sizeIsValidForCategory(size, category.slug)) {
+     return { error: "Please select a valid size for this category" };
+   }
+
+   const status: "DRAFT" | "PENDING_REVIEW" =
     action === "submit_review" ? "PENDING_REVIEW" : "DRAFT";
 
   await prisma.listing.create({
@@ -84,8 +91,8 @@ export async function createListing(prevState: { error?: string; success?: boole
       currentBid: null,
       bidIncrement: 50,
       reservePrice,
-      size: size || null,
-      condition: condition ? (condition as ListingConditionType) : null,
+       size,
+       condition: condition ? (condition as ListingConditionType) : null,
       status,
       endsAt: new Date(Date.now() + duration * 60 * 60 * 1000),
     },

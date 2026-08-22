@@ -90,11 +90,15 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
           <div className="flex justify-between text-xs uppercase font-black text-gray-500 tracking-wider mb-2">
             <span>Starting bid</span>
             <span>Condition</span>
+            <span>Size</span>
           </div>
           <div className="flex justify-between items-baseline mb-6">
             <span className="text-xl font-black">{money(listing.startingBid)}</span>
             <span className="text-xs font-black uppercase">
               {listing.condition?.replace("_", " ") ?? "—"}
+            </span>
+            <span className="text-xs font-black uppercase bg-ink/5 border border-ink/20 rounded-full py-1 px-2">
+              {listing.size ?? "—"}
             </span>
           </div>
 
