@@ -16,7 +16,7 @@ import type { CategoryId, Product } from "@/types";
 
 const DEFAULT_FEATURED_ID = 7;
 
-export default function LiveDropLandingPage() {
+export default function LiveDropLandingPage({ liveCount }: { liveCount?: number }) {
   const [selectedCategory, setSelectedCategory] = useState<CategoryId>("all");
   const [featuredProduct, setFeaturedProduct] = useState<Product>(
     () => PRODUCTS.find((p) => p.id === DEFAULT_FEATURED_ID) ?? PRODUCTS[0],
@@ -73,7 +73,7 @@ export default function LiveDropLandingPage() {
         />
       </div>
 
-      <Navbar liveCount={PRODUCTS.length} />
+      <Navbar liveCount={liveCount ?? PRODUCTS.length} />
 
       <CategoryBar selected={selectedCategory} onSelect={handleCategorySelect} counts={categoryCounts} />
 

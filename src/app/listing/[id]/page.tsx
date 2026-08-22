@@ -23,7 +23,8 @@ function timeRemaining(end: string) {
 }
 
 export default async function ListingDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+  const rawId = (await params).id;
+  const id = decodeURIComponent(rawId);
   const listing = await prisma.listing.findUnique({
     where: { id },
     include: {
@@ -44,7 +45,8 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
   const nextMin = currentBid + listing.bidIncrement;
   const endsMs = new Date(listing.endsAt).getTime();
   const isEnded = endsMs <= Date.now();
-  const canBid = session?.user && listing.status === "ACTIVE" && !isEnded && session.user.id !== listing.sellerId;
+  const canBid =
+    !!session?.user && listing.status === "ACTIVE" && !isEnded && session.user.id !== listing.sellerId;
 
   return (
     <div className="grid lg:grid-cols-3 gap-8">
@@ -55,15 +57,21 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
               <img src={listing.images[0]} alt={listing.title} className="w-full h-full object-cover" />
             </div>
           ) : (
-            <div className="aspect-[4/3] rounded-2xl border-2 border-dashed border-ink/30 bg-gray-50 flex items-center justify-center text-6xl mb-4">📦</div>
+            <div className="aspect-[4/3] rounded-2xl border-2 border-dashed border-ink/30 bg-gray-50 flex items-center justify-center text-6xl mb-4">
+              📦
+            </div>
           )}
           <h1 className="text-3xl font-black uppercase mb-2">{listing.title}</h1>
-          <p className="text-gray-600 font-bold mb-4">Listed in {listing.category.emoji} {listing.category.name}</p>
+          <p className="text-gray-600 font-bold mb-4">
+            Listed in {listing.category.emoji} {listing.category.name}
+          </p>
           <p className="text-gray-700 leading-relaxed">{listing.description}</p>
         </div>
 
         <div className="bg-white border-2 border-ink shadow-brut-lg rounded-3xl p-6">
-          <h2 className="text-xl font-black uppercase mb-3">Bid History ({listing.bidCount})</h2>
+          <h2 className="text-xl font-black uppercase mb-3">
+            Bid History ({listing.bidCount})
+          </h2>
           <BidHistory bids={listing.bids} currentUserId={session?.user?.id} />
         </div>
       </div>
@@ -85,17 +93,21 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
           </div>
           <div className="flex justify-between items-baseline mb-6">
             <span className="text-xl font-black">{money(listing.startingBid)}</span>
-            <span className="text-xs font-black uppercase">{listing.condition?.replace("_", " ") ?? "—"}</span>
+            <span className="text-xs font-black uppercase">
+              {listing.condition?.replace("_", " ") ?? "—"}
+            </span>
           </div>
 
           {listing.reservePrice && (
             <p className="text-xs font-bold bg-acid/20 border-2 border-acid rounded-xl py-2 px-3 mb-4">
-              Reserve price met at {money(listing.reservePrice)}
+              Reserve: {money(listing.reservePrice)}
             </p>
           )}
 
           <div className="bg-ink/5 border-2 border-dashed border-ink/20 rounded-xl py-3 text-center mb-6">
-            <span className="font-black text-bubblegum">Time left: {timeRemaining(listing.endsAt.toString())}</span>
+            <span className="font-black text-bubblegum">
+              Time left: {timeRemaining(listing.endsAt.toString())}
+            </span>
           </div>
 
           {canBid ? (

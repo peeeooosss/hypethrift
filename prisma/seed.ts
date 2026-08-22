@@ -64,11 +64,11 @@ async function main() {
   }
   console.log(`Seeded ${CATEGORIES.length} categories`);
 
-  const endsAt = new Date(Date.now() + 60 * 60 * 1000);
+  const endsAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
   for (const l of DEMO_LISTINGS) {
     await prisma.listing.upsert({
       where: { id: `seed-${l.title}` },
-      update: { currentBid: l.startingBid, status: l.status as any },
+      update: { currentBid: l.startingBid, status: l.status as any, endsAt },
       create: {
         id: `seed-${l.title}`,
         title: l.title,

@@ -72,7 +72,7 @@ export default async function ListingsIndexPage({
             {listings.map((l) => {
               const mins = (new Date(l.endsAt).getTime() - Date.now()) / (1000 * 60);
               return (
-                <Link key={l.id} href={`/listing/${l.id}`} className="group">
+                <Link key={l.id} href={`/listing/${encodeURIComponent(l.id)}`} className="group">
                   <div className="bg-white border-2 border-ink shadow-brut-lg rounded-3xl p-5 aspect-[4/5] flex flex-col">
                     <div className="flex-1 flex items-center justify-center text-5xl mb-3">{l.category.emoji}</div>
                     <h3 className="font-black text-sm uppercase text-center mb-2 line-clamp-2">{l.title}</h3>

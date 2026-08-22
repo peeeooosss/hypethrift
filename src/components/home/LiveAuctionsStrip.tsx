@@ -35,10 +35,11 @@ export default async function LiveAuctionsStrip() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {listings.map((l, i) => {
+        {listings.map((l) => {
           const mins = (new Date(l.endsAt).getTime() - Date.now()) / (1000 * 60);
+          const href = `/listing/${encodeURIComponent(l.id)}`;
           return (
-            <Link key={l.id} href={`/listing/${l.id}`} className="group">
+            <Link key={l.id} href={href} className="group">
               <div className="bg-white border-2 border-ink shadow-brut-lg rounded-3xl p-4 aspect-[4/5] flex flex-col">
                 <div className="flex-1 flex items-center justify-center text-4xl mb-3">{l.category.emoji}</div>
                 <h3 className="font-black text-sm uppercase text-center mb-2 line-clamp-2">{l.title}</h3>
