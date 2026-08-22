@@ -101,9 +101,52 @@ export async function deleteListing(formData: FormData) {
   const listingId = formData.get("listingId")?.toString();
   if (!listingId) return;
 
-  const listing = await prisma.listing.findUnique({ where: { id: listingId }, select: { sellerId: true } });
-  if (!listing || listing.sellerId !== seller.id) return;
+   const listing = await prisma.listing.findUnique({ where: { id: listingId }, select: { sellerId: true } });
+   if (!listing || listing.sellerId !== seller.id) return;
 
-  await prisma.listing.delete({ where: { id: listingId } });
-  revalidatePath("/seller/listings");
+   await prisma.listing.delete({ where: { id: listingId } });
+   revalidatePath("/seller/listings");
+}
+
+async function requireUser() {
+  const session = await auth();
+  if (!session?.user) redirect("/login");
+  if (session.user.isBanned) redirect("/login");
+  return session.user.id;
+}
+
+export async function placeBid(prevState: { error?: string; success?: boolean } | null, formData: FormData) {
+  const userId = await requireUser();
+  const listingId = formData.get("listingId")?.toString();
+  const amount = Number(formData.get("amount"));
+
+  if (!listingId) return { error: "Missing listing id" };
+
+  const listing = await prisma.listing.findUnique({
+    where: { id: listingId },
+  });
+  if (!listing) return { error: "Listing not found" };
+  if (listing.sellerId === userId) return { error: "You cannot bid on your own listing" };
+  if (listing.status !== "ACTIVE") return { error: "This auction is not active" };
+  if (new Date(listing.endsAt) <= new Date()) return { error: "This auction has ended" };
+
+  const minimum = listing.currentBid ?? listing.startingBid;
+  if (amount <= minimum) return { error: `Bid must be greater than ₹${minimum}` };
+  if (listing.reservePrice && amount < listing.reservePrice) {
+    return { error: `Bid must meet the reserve price of ₹${listing.reservePrice}` };
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.bid.create({
+      data: { amount, listingId: listing.id, bidderId: userId },
+    });
+    await tx.listing.update({
+      where: { id: listing.id },
+      data: { currentBid: amount, bidCount: { increment: 1 } },
+    });
+  });
+
+  revalidatePath(`/listing/${listingId}`);
+  revalidatePath(`/listing/${listingId}/bids`);
+  return { success: true, amount };
 }

@@ -147,9 +147,10 @@ model Listing {
   verified      Boolean       @default(false)
   hot           Boolean       @default(false)
   endsAt        DateTime
-  views         Int           @default(0)
-  watchers      Int           @default(0)
-  createdAt     DateTime      @default(now())
+   views         Int           @default(0)
+   watchers      Int           @default(0)
+   bidCount      Int           @default(0)
+   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
   category Category @relation(fields: [categoryId], references: [id])
