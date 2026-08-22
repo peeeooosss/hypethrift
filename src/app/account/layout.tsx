@@ -8,6 +8,7 @@ const NAV = [
   { href: "/account/bids", label: "Bids" },
   { href: "/account/saved", label: "Saved" },
   { href: "/account/addresses", label: "Addresses" },
+  { href: "/account/support", label: "Support" },
 ];
 
 const SELLER_LINK = { href: "/apply-seller", label: "Sell on HypeThrift" };

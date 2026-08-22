@@ -18,7 +18,8 @@ export default async function SellerListingsPage() {
     PENDING_REVIEW: { label: "In Review", color: "bg-bubblegum text-ink" },
     DRAFT: { label: "Draft", color: "bg-gray-300 text-gray-800" },
     REJECTED: { label: "Rejected", color: "bg-ink text-white" },
-    ARCHIVED: { label: "Archived", color: "bg-gray-400 text-gray-800" },
+    ENDED: { label: "Ended", color: "bg-gray-400 text-gray-800" },
+    SOLD: { label: "Sold", color: "bg-blue-400 text-ink" },
   };
 
   return (

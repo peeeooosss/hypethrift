@@ -57,7 +57,7 @@ export default async function AccountOrdersPage() {
       <h1 className="text-3xl font-black uppercase">My Orders</h1>
       <div className="space-y-4">
         {orders.map((o) => (
-          <Link key={o.id} href={`/listing/${encodeURIComponent(o.listing.id)}`} className="block">
+          <div key={o.id} className="block">
             <div className="bg-white border-2 border-ink shadow-brut-lg rounded-3xl p-5 hover:bg-ink/5 transition-colors">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -72,10 +72,18 @@ export default async function AccountOrdersPage() {
                 <div className="text-right">
                   <span className="font-black text-lg block">{money(o.finalPrice)}</span>
                   <span className="text-xs font-black uppercase">{ORDER_LABEL[o.status] ?? o.status}</span>
+                  {o.status === "PENDING_PAYMENT" && (
+                    <Link
+                      href={`/checkout/${o.id}`}
+                      className="mt-1 inline-block text-xs font-black text-acid hover:underline"
+                    >
+                      Pay Now →
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>
-          </Link>
+          </div>
         ))}
       </div>
     </div>

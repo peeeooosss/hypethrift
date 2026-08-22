@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import Link from "next/link";
+import { createOrderFromListing } from "@/actions/auction-actions";
 import BidForm from "@/components/listing/BidForm";
 import BidHistory from "@/components/listing/BidHistory";
 import SaveButton from "@/components/listing/SaveButton";
@@ -52,9 +53,21 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
   const canBid =
     !!session?.user && listing.status === "ACTIVE" && !isEnded && session.user.id !== listing.sellerId;
 
+  const winningBid = isEnded
+    ? listing.bids.reduce((top, b) => (b.amount > (top?.amount ?? 0) ? b : top), undefined as typeof listing.bids[0] | undefined)
+    : undefined;
+
+  const existingOrder = isEnded && winningBid
+    ? await prisma.order.findUnique({
+        where: { listingId: listing.id },
+        select: { id: true, status: true, buyerId: true },
+      })
+    : null;
+
   return (
-    <div className="grid lg:grid-cols-3 gap-8">
-      <div className="lg:col-span-2 space-y-6">
+    <div className="space-y-8">
+      <div className="grid lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-6">
         <div className="bg-white border-2 border-ink shadow-brut-2xl rounded-3xl p-6">
           <div className="relative">
             {listing.images.length > 0 ? (
@@ -147,7 +160,127 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
             {listing.seller.name ?? listing.seller.email}
           </p>
         </div>
+        </div>
       </div>
+
+      <EndedAuctionView
+        listing={listing}
+        winningBid={winningBid}
+        existingOrder={existingOrder}
+        currentUserId={session?.user?.id}
+      />
+    </div>
+  );
+}
+
+function EndedAuctionView({
+  listing,
+  winningBid,
+  existingOrder,
+  currentUserId,
+}: {
+  listing: {
+    id: string;
+    status: string;
+    currentBid: number | null;
+    reservePrice: number | null;
+  };
+  winningBid: { amount: number; bidderId: string } | undefined;
+  existingOrder: { id: string; status: string; buyerId: string } | null;
+  currentUserId?: string;
+}) {
+  const ORDER_LABEL: Record<string, string> = {
+    PENDING_PAYMENT: "Pending Payment",
+    PAID: "Paid",
+    SHIPPED: "Shipped",
+    DELIVERED: "Delivered",
+    CANCELLED: "Cancelled",
+    REFUNDED: "Refunded",
+  };
+
+  if (!winningBid && !existingOrder) {
+    return (
+      <div className="bg-white border-2 border-ink shadow-brut-lg rounded-3xl p-6">
+        <div className="text-center">
+          <h2 className="text-xl font-black uppercase mb-2">Auction Ended</h2>
+          <p className="text-gray-500 font-bold">No bids were placed.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (listing.reservePrice && !listing.currentBid && (listing.currentBid ?? 0) < listing.reservePrice) {
+    return (
+      <div className="bg-white border-2 border-ink shadow-brut-lg rounded-3xl p-6">
+        <div className="text-center">
+          <h2 className="text-xl font-black uppercase mb-2">Reserve Not Met</h2>
+          <p className="text-gray-500 font-bold">
+            The reserve price of ₹{listing.reservePrice.toLocaleString("en-IN")} was not reached.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const isWinner = winningBid?.bidderId === currentUserId;
+  const orderStatus = existingOrder?.status;
+
+  if (orderStatus === "PAID" || orderStatus === "SHIPPED" || orderStatus === "DELIVERED") {
+    return (
+      <div className="bg-white border-2 border-ink shadow-brut-lg rounded-3xl p-6">
+        <div className="text-center">
+          <h2 className="text-xl font-black uppercase mb-2">Order Confirmed</h2>
+          <p className="text-gray-600 font-bold mb-4">
+            Status: <span className="text-acid uppercase">{ORDER_LABEL[orderStatus!] ?? orderStatus}</span>
+          </p>
+          <Link
+            href="/account/orders"
+            className="block text-center bg-acid border-2 border-ink py-3 rounded-2xl font-black uppercase text-sm hover:bg-bubblegum transition-colors"
+          >
+            View Order
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white border-2 border-ink shadow-brut-lg rounded-3xl p-6">
+      <h2 className="text-xl font-black uppercase mb-3">Auction Ended</h2>
+      {winningBid && (
+        <p className="text-lg font-black mb-2">
+          Winning bid: ₹{winningBid.amount.toLocaleString("en-IN")}
+        </p>
+      )}
+
+      {isWinner && !existingOrder && (
+        <form action={async (formData: FormData) => { await createOrderFromListing(listing.id, formData); }}>
+          <button
+            type="submit"
+            className="w-full text-center bg-bubblegum border-2 border-ink shadow-brut-md py-3 rounded-2xl font-black uppercase text-sm hover:bg-acid transition-colors"
+          >
+            Proceed to Checkout
+          </button>
+        </form>
+      )}
+
+      {isWinner && existingOrder && orderStatus === "PENDING_PAYMENT" && (
+        <Link
+          href={`/checkout/${existingOrder.id}`}
+          className="block text-center bg-bubblegum border-2 border-ink shadow-brut-md py-3 rounded-2xl font-black uppercase text-sm hover:bg-acid transition-colors"
+        >
+          Complete Payment
+        </Link>
+      )}
+
+      {!isWinner && existingOrder && (
+        <p className="text-sm font-bold text-gray-500 mt-2">
+          Sold to another bidder.{" "}
+          <Link href="/listings" className="underline font-black">
+            Browse more auctions
+          </Link>
+        </p>
+      )}
     </div>
   );
 }

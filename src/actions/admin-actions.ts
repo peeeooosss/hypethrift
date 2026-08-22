@@ -179,3 +179,91 @@ export async function deleteCategory(formData: FormData) {
   await prisma.category.delete({ where: { id: categoryId } });
   revalidatePath("/admin/categories");
 }
+
+// ---------------------------------------------------------------------------
+// Support tickets
+// ---------------------------------------------------------------------------
+export async function updateTicketStatus(formData: FormData) {
+  await requireAdminOrThrow();
+  const ticketId = formData.get("ticketId")?.toString();
+  const status = formData.get("status")?.toString();
+  if (!ticketId || !status) return;
+
+  await prisma.supportTicket.update({
+    where: { id: ticketId },
+    data: { status },
+  });
+  revalidatePath("/admin/support");
+}
+
+export async function deleteSupportTicket(formData: FormData) {
+  await requireAdminOrThrow();
+  const ticketId = formData.get("ticketId")?.toString();
+  if (!ticketId) return;
+
+  await prisma.supportTicket.delete({ where: { id: ticketId } });
+  revalidatePath("/admin/support");
+}
+
+// ---------------------------------------------------------------------------
+// Orders
+// ---------------------------------------------------------------------------
+type OrderStatus = "PENDING_PAYMENT" | "PAID" | "SHIPPED" | "DELIVERED" | "CANCELLED" | "REFUNDED";
+
+export async function updateOrderStatus(formData: FormData) {
+  await requireAdminOrThrow();
+  const orderId = formData.get("orderId")?.toString();
+  const status = formData.get("status")?.toString();
+  if (!orderId || !status) return;
+
+  await prisma.order.update({
+    where: { id: orderId },
+    data: { status: status as OrderStatus },
+  });
+  revalidatePath("/admin/orders");
+  revalidatePath("/admin/orders");
+}
+
+// ---------------------------------------------------------------------------
+// Payouts
+// ---------------------------------------------------------------------------
+export async function createPayout(formData: FormData) {
+  try {
+    await requireAdminOrThrow();
+  } catch {
+    return { error: "Unauthorized" };
+  }
+
+  const sellerId = formData.get("sellerId")?.toString();
+  const amount = Number(formData.get("amount"));
+  const method = formData.get("method")?.toString() ?? "bank";
+
+  if (!sellerId || isNaN(amount) || amount <= 0) {
+    return { error: "Invalid input" };
+  }
+
+  await prisma.payout.create({
+    data: {
+      sellerId,
+      amount,
+      method,
+      status: "COMPLETED",
+    },
+  });
+
+  revalidatePath("/admin/payouts");
+  return null;
+}
+
+export async function updatePayoutStatus(formData: FormData) {
+  await requireAdminOrThrow();
+  const payoutId = formData.get("payoutId")?.toString();
+  const status = formData.get("status")?.toString();
+  if (!payoutId || !status) return;
+
+  await prisma.payout.update({
+    where: { id: payoutId },
+    data: { status: status as "PENDING" | "PROCESSING" | "COMPLETED" | "REJECTED" },
+  });
+  revalidatePath("/admin/payouts");
+}

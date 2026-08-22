@@ -104,3 +104,50 @@ export async function unsaveListingAction(formData: FormData) {
   revalidatePath(`/listing/${encodeURIComponent(listingId)}`);
   revalidatePath("/listings");
 }
+
+// ---------------------------------------------------------------------------
+// Support tickets
+// ---------------------------------------------------------------------------
+const ticketSchema = z.object({
+  subject: z.string().min(1, "Subject is required"),
+  message: z.string().min(10, "Message must be at least 10 characters"),
+});
+
+export async function createSupportTicket(prevState: { error?: string; success?: boolean } | null, formData: FormData) {
+  const userId = await requireUser();
+
+  const parsed = ticketSchema.safeParse({
+    subject: formData.get("subject"),
+    message: formData.get("message"),
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+
+  await prisma.supportTicket.create({
+    data: {
+      userId,
+      subject: parsed.data.subject,
+      message: parsed.data.message,
+    },
+  });
+
+  revalidatePath("/account/support");
+  return { success: true };
+}
+
+export async function getSupportTickets() {
+  const userId = await requireUser();
+  return prisma.supportTicket.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+export async function getSupportTicket(ticketId: string) {
+  const userId = await requireUser();
+  return prisma.supportTicket.findUnique({
+    where: { id: ticketId, userId },
+  });
+}
