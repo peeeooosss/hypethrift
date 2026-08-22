@@ -24,6 +24,14 @@ yarn-error.log*
 
 # env files
 .env*.local
+.env
+
+# vercel
+.vercel/
+.vercel-token
+
+# generated prisma client
+/prisma/generated/
 
 # typescript
 *.tsbuildinfo
