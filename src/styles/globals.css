@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-cream text-ink font-sans antialiased;
+}
+
+@layer components {
+  /* Animated gradient sheen used by the primary bid CTA */
+  .shine-btn {
+    background: linear-gradient(90deg, #d4ff33 0%, #e8ff7a 50%, #d4ff33 100%);
+    background-size: 200% auto;
+    animation: shine 3s linear infinite;
+  }
+
+  .live-dot {
+    animation: pulse-live 1.5s ease-in-out infinite;
+  }
+}
+
+@layer utilities {
+  /* Hides scrollbars while keeping horizontal scroll (category pills) */
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

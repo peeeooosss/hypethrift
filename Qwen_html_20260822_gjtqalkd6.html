@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HypeThrift - Live Drops by Category</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
+  <style>
+    * { -webkit-tap-highlight-color: transparent; }
+    body { font-family: system-ui, -apple-system, sans-serif; }
+    @keyframes marquee {
+      0% { transform: translateX(0%); }
+      100% { transform: translateX(-50%); }
+    }
+    .animate-marquee { animation: marquee 20s linear infinite; }
+    @keyframes confetti-fall {
+      0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    }
+    @keyframes shine {
+      0% { background-position: -200% center; }
+      100% { background-position: 200% center; }
+    }
+    .shine-btn {
+      background: linear-gradient(90deg, #D4FF33 0%, #E8FF7A 50%, #D4FF33 100%);
+      background-size: 200% auto;
+      animation: shine 3s linear infinite;
+    }
+    @keyframes pulse-live {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.3); }
+    }
+    .live-dot { animation: pulse-live 1.5s ease-in-out infinite; }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    html { scroll-behavior: smooth; }
+  </style>
+</head>
+<body class="bg-[#F4F0EA]">
+  <div id="root"></div>
+
+  <script type="text/babel" data-presets="react">
+    const { useState, useEffect, useRef } = React;
+    const { motion, AnimatePresence } = window.Motion;
+
+    // --- Inline SVG Icons ---
+    const ZapIcon = ({ size = 16, fill = "none", stroke = "currentColor" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={stroke} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+    );
+    const UserIcon = ({ size = 20 }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    );
+    const ArrowRightIcon = ({ size = 24 }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    );
+    const BadgeCheckIcon = ({ size = 20 }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.77 4 4 0 0 1 0 6.76 4 4 0 0 1-4.78 4.77 4 4 0 0 1-6.74 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76z"/><polyline points="9 12 11 14 15 10"/></svg>
+    );
+    const EyeIcon = ({ size = 14 }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>
+    );
+    const HeartIcon = ({ size = 24, filled }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? "#FF66B2" : "none"} stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+    );
+    const TrendingUpIcon = ({ size = 14 }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+    );
+    const ShareIcon = ({ size = 16 }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+    );
+    const StarIcon = ({ size = 16 }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+    );
+    const SearchIcon = ({ size = 18 }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    );
+
+    // --- CATEGORIES DATA ---
+    const CATEGORIES = [
+      { id: 'all', name: 'All Live', emoji: '🔥', color: '#121212', textColor: '#D4FF33' },
+      { id: 'sneakers', name: 'Sneakers', emoji: '👟', color: '#FF66B2', textColor: '#121212' },
+      { id: 'streetwear', name: 'Streetwear', emoji: '👕', color: '#33CCFF', textColor: '#121212' },
+      { id: 'vintage', name: 'Vintage', emoji: '👗', color: '#FF66B2', textColor: '#121212' },
+      { id: 'bags', name: 'Bags', emoji: '👜', color: '#D4FF33', textColor: '#121212' },
+      { id: 'accessories', name: 'Accessories', emoji: '🕶️', color: '#33CCFF', textColor: '#121212' },
+      { id: 'denim', name: 'Denim', emoji: '👖', color: '#FF66B2', textColor: '#121212' },
+      { id: 'jewelry', name: 'Jewelry', emoji: '💍', color: '#D4FF33', textColor: '#121212' },
+      { id: 'outerwear', name: 'Outerwear', emoji: '🧥', color: '#33CCFF', textColor: '#121212' },
+    ];
+
+    // --- MOCK PRODUCTS DATA ---
+    const PRODUCTS = [
+      { id: 1, category: 'sneakers', name: 'Jordan 1 Chicago (2015)', emoji: '👟', bg: '#FF66B2', bid: 18500, time: 3600, bids: 42, viewers: 128, verified: true, hot: true },
+      { id: 2, category: 'sneakers', name: 'Yeezy 350 Zebra', emoji: '👟', bg: '#33CCFF', bid: 12400, time: 7200, bids: 28, viewers: 89, verified: true, hot: false },
+      { id: 3, category: 'sneakers', name: 'Dunk Low Panda', emoji: '👟', bg: '#D4FF33', bid: 8200, time: 1800, bids: 56, viewers: 210, verified: false, hot: true },
+      { id: 4, category: 'streetwear', name: 'Supreme Box Logo Tee', emoji: '👕', bg: '#FF66B2', bid: 5600, time: 5400, bids: 34, viewers: 156, verified: true, hot: true },
+      { id: 5, category: 'streetwear', name: 'Stussy 8-Ball Fleece', emoji: '👕', bg: '#33CCFF', bid: 3200, time: 9000, bids: 19, viewers: 67, verified: true, hot: false },
+      { id: 6, category: 'streetwear', name: 'BAPE Shark Hoodie', emoji: '👕', bg: '#D4FF33', bid: 7800, time: 4500, bids: 41, viewers: 198, verified: true, hot: true },
+      { id: 7, category: 'vintage', name: 'Y2K Butterfly Top', emoji: '👗', bg: '#33CCFF', bid: 2450, time: 6312, bids: 23, viewers: 347, verified: true, hot: true },
+      { id: 8, category: 'vintage', name: '90s Levi\'s 501', emoji: '👖', bg: '#FF66B2', bid: 4100, time: 2700, bids: 38, viewers: 142, verified: true, hot: false },
+      { id: 9, category: 'vintage', name: 'Vintage Band Tee', emoji: '👕', bg: '#D4FF33', bid: 1850, time: 8100, bids: 15, viewers: 58, verified: false, hot: false },
+      { id: 10, category: 'bags', name: 'Coach Tabby Shoulder', emoji: '👜', bg: '#33CCFF', bid: 6400, time: 5400, bids: 27, viewers: 93, verified: true, hot: true },
+      { id: 11, category: 'bags', name: 'Prada Nylon Crossbody', emoji: '👜', bg: '#FF66B2', bid: 9200, time: 3600, bids: 44, viewers: 176, verified: true, hot: true },
+      { id: 12, category: 'bags', name: 'Vintage Fendi Baguette', emoji: '👜', bg: '#D4FF33', bid: 12800, time: 1800, bids: 52, viewers: 234, verified: true, hot: true },
+      { id: 13, category: 'accessories', name: 'Chrome Hearts Ring', emoji: '💍', bg: '#33CCFF', bid: 7500, time: 7200, bids: 31, viewers: 112, verified: true, hot: false },
+      { id: 14, category: 'accessories', name: 'Oakley Vintage Shades', emoji: '🕶️', bg: '#FF66B2', bid: 2100, time: 4500, bids: 18, viewers: 74, verified: false, hot: false },
+      { id: 15, category: 'accessories', name: 'G-Shock DW5600', emoji: '⌚', bg: '#D4FF33', bid: 3800, time: 3600, bids: 25, viewers: 88, verified: true, hot: true },
+      { id: 16, category: 'denim', name: 'Evisu Seagull Jeans', emoji: '👖', bg: '#FF66B2', bid: 4500, time: 5400, bids: 22, viewers: 82, verified: true, hot: false },
+      { id: 17, category: 'denim', name: 'Acne Studios Jacket', emoji: '🧥', bg: '#33CCFF', bid: 5200, time: 9000, bids: 16, viewers: 61, verified: true, hot: false },
+      { id: 18, category: 'jewelry', name: 'Vivienne Westwood Orb', emoji: '💍', bg: '#D4FF33', bid: 2800, time: 2700, bids: 33, viewers: 124, verified: true, hot: true },
+      { id: 19, category: 'jewelry', name: 'Tiffany Silver Chain', emoji: '💎', bg: '#FF66B2', bid: 3400, time: 6300, bids: 21, viewers: 95, verified: true, hot: false },
+      { id: 20, category: 'outerwear', name: 'North Face Nuptse 1996', emoji: '🧥', bg: '#33CCFF', bid: 8900, time: 4500, bids: 47, viewers: 201, verified: true, hot: true },
+      { id: 21, category: 'outerwear', name: 'Carhartt WIP Detroit', emoji: '🧥', bg: '#D4FF33', bid: 4100, time: 7200, bids: 24, viewers: 78, verified: false, hot: false },
+    ];
+
+    function formatTime(seconds) {
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = seconds % 60;
+      if (h > 0) return `${h}h ${String(m).padStart(2,'0')}m`;
+      if (m > 0) return `${m}m ${String(s).padStart(2,'0')}s`;
+      return `${s}s`;
+    }
+
+    function formatTimeFull(seconds) {
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = seconds % 60;
+      return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+
+    // --- CATEGORY BAR COMPONENT ---
+    function CategoryBar({ selected, onSelect, counts }) {
+      const scrollRef = useRef(null);
+
+      return (
+        <div className="sticky top-[84px] md:top-[88px] z-40 bg-[#F4F0EA]/95 backdrop-blur-md border-b-2 border-[#121212] py-3 px-2">
+          <div 
+            ref={scrollRef}
+            className="hide-scrollbar max-w-7xl mx-auto flex gap-2 overflow-x-auto pb-1 px-2"
+          >
+            {CATEGORIES.map((cat) => {
+              const isActive = selected === cat.id;
+              const count = counts[cat.id] || 0;
+              return (
+                <motion.button
+                  key={cat.id}
+                  whileHover={{ y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => onSelect(cat.id)}
+                  className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full border-2 border-[#121212] transition-all ${
+                    isActive 
+                      ? 'shadow-[4px_4px_0px_0px_#121212]' 
+                      : 'shadow-[2px_2px_0px_0px_#121212] hover:shadow-[3px_3px_0px_0px_#121212]'
+                  }`}
+                  style={{
+                    backgroundColor: isActive ? cat.color : '#FFFFFF',
+                    color: isActive ? cat.textColor : '#121212',
+                  }}
+                >
+                  <span className="text-lg">{cat.emoji}</span>
+                  <span className="font-black text-sm uppercase whitespace-nowrap">{cat.name}</span>
+                  {count > 0 && (
+                    <span 
+                      className="text-[10px] font-black px-2 py-0.5 rounded-full border-2 border-[#121212]"
+                      style={{
+                        backgroundColor: isActive ? '#FFFFFF' : cat.color,
+                        color: isActive ? '#121212' : '#121212',
+                      }}
+                    >
+                      {count}
+                    </span>
+                  )}
+                </motion.button>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    // --- PRODUCT CARD COMPONENT ---
+    function ProductCard({ product, onClick, index }) {
+      const [time, setTime] = useState(product.time);
+      
+      useEffect(() => {
+        if (time <= 0) return;
+        const timer = setInterval(() => setTime(p => p > 0 ? p - 1 : 0), 1000);
+        return () => clearInterval(timer);
+      }, [time]);
+
+      const isEndingSoon = time < 1800;
+
+      return (
+        <motion.div
+          layout
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.9 }}
+          transition={{ duration: 0.3, delay: index * 0.05 }}
+          whileHover={{ y: -4 }}
+          onClick={() => onClick(product)}
+          className="group bg-white border-2 border-[#121212] shadow-[6px_6px_0px_0px_#121212] rounded-2xl overflow-hidden cursor-pointer transition-shadow hover:shadow-[8px_8px_0px_0px_#121212]"
+        >
+          {/* Image */}
+          <div 
+            className="relative aspect-square flex items-center justify-center overflow-hidden"
+            style={{ backgroundColor: product.bg }}
+          >
+            <div className="text-7xl md:text-8xl group-hover:scale-110 transition-transform duration-300">
+              {product.emoji}
+            </div>
+
+            {/* Top badges */}
+            <div className="absolute top-2 left-2 right-2 flex justify-between items-start">
+              {product.hot && (
+                <div className="bg-[#FF66B2] border-2 border-[#121212] rounded-full px-2 py-0.5 flex items-center gap-1">
+                  <span className="text-xs">🔥</span>
+                  <span className="text-[9px] font-black uppercase text-white">HOT</span>
+                </div>
+              )}
+              {product.verified && (
+                <div className="bg-white border-2 border-[#121212] rounded-full p-1">
+                  <BadgeCheckIcon size={14} />
+                </div>
+              )}
+            </div>
+
+            {/* Live indicator */}
+            <div className="absolute bottom-2 left-2 bg-[#121212] text-white rounded-full px-2 py-0.5 flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 bg-[#D4FF33] rounded-full live-dot"></div>
+              <span className="text-[10px] font-black uppercase">Live</span>
+            </div>
+
+            <div className="absolute bottom-2 right-2 bg-white/90 backdrop-blur border-2 border-[#121212] rounded-full px-2 py-0.5 flex items-center gap-1">
+              <EyeIcon size={10} />
+              <span className="text-[10px] font-black">{product.viewers}</span>
+            </div>
+          </div>
+
+          {/* Info */}
+          <div className="p-3 md:p-4">
+            <h3 className="font-black text-sm md:text-base leading-tight mb-2 line-clamp-2 min-h-[2.5rem]">
+              {product.name}
+            </h3>
+            
+            <div className="flex justify-between items-end gap-2">
+              <div>
+                <p className="text-[9px] uppercase font-bold text-gray-500 tracking-wider mb-0.5">Current</p>
+                <p className="font-black text-lg md:text-xl text-[#FF66B2] tabular-nums">
+                  ₹{product.bid.toLocaleString()}
+                </p>
+              </div>
+              <div className={`text-right ${isEndingSoon ? 'text-red-500' : ''}`}>
+                <p className="text-[9px] uppercase font-bold text-gray-500 tracking-wider mb-0.5">
+                  {isEndingSoon ? '🔥 Ending' : 'Ends in'}
+                </p>
+                <p className="font-black text-sm md:text-base font-mono tabular-nums">
+                  {formatTime(time)}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-3 pt-3 border-t-2 border-dashed border-[#121212]/30 flex justify-between items-center">
+              <span className="text-[10px] font-bold text-gray-500">{product.bids} bids</span>
+              <span className="text-[10px] font-black uppercase text-[#121212] group-hover:text-[#FF66B2] transition-colors">
+                Bid now →
+              </span>
+            </div>
+          </div>
+        </motion.div>
+      );
+    }
+
+    // --- BIDDING CARD (Featured Product) ---
+    function BiddingCard({ product }) {
+      const [time, setTime] = useState(product.time);
+      const [liked, setLiked] = useState(false);
+      const [selectedSize, setSelectedSize] = useState(null);
+      const [showConfetti, setShowConfetti] = useState(false);
+      const [bidPlaced, setBidPlaced] = useState(false);
+      const [currentBid, setCurrentBid] = useState(product.bid);
+      const [viewers, setViewers] = useState(product.viewers);
+
+      useEffect(() => {
+        setTime(product.time);
+        setCurrentBid(product.bid);
+        setViewers(product.viewers);
+        setBidPlaced(false);
+        setSelectedSize(null);
+      }, [product.id]);
+
+      useEffect(() => {
+        if (time <= 0) return;
+        const timer = setInterval(() => setTime(p => p > 0 ? p - 1 : 0), 1000);
+        return () => clearInterval(timer);
+      }, [time]);
+
+      useEffect(() => {
+        const timer = setInterval(() => {
+          setViewers(prev => Math.max(50, prev + Math.floor(Math.random() * 7) - 3));
+        }, 2500);
+        return () => clearInterval(timer);
+      }, []);
+
+      const handlePlaceBid = () => {
+        if (!selectedSize) return;
+        const newBid = currentBid + 50;
+        setCurrentBid(newBid);
+        setShowConfetti(true);
+        setBidPlaced(true);
+        setTimeout(() => setShowConfetti(false), 3500);
+        setTimeout(() => setBidPlaced(false), 2000);
+      };
+
+      const sizes = ['XS', 'S', 'M', 'L', 'XL'];
+      const nextBid = currentBid + 50;
+
+      return (
+        <>
+          <section className="relative max-w-7xl mx-auto pt-10 pb-10 px-4 text-center">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+              <div className="inline-block bg-[#121212] text-[#D4FF33] px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-4 border-2 border-[#121212]">
+                ⚡ Featured Drop · {CATEGORIES.find(c => c.id === product.category)?.emoji} {CATEGORIES.find(c => c.id === product.category)?.name}
+              </div>
+              <h1 className="text-5xl md:text-7xl lg:text-8xl font-black uppercase leading-[0.85] tracking-tighter mb-6">
+                {product.name.split(' ')[0]}<br />
+                <span className="relative inline-block">
+                  {product.name.split(' ').slice(1).join(' ')}
+                  <svg className="absolute -bottom-2 left-0 w-full" height="12" viewBox="0 0 200 12" preserveAspectRatio="none">
+                    <path d="M2,8 Q50,2 100,6 T198,5" stroke="#FF66B2" strokeWidth="4" fill="none" strokeLinecap="round"/>
+                  </svg>
+                </span>
+              </h1>
+            </motion.div>
+            
+            <div className="relative flex justify-center items-center">
+              <motion.div 
+                animate={{ y: [0, -20, 0] }} 
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                className="relative z-10 w-56 h-56 md:w-80 md:h-80 border-2 border-[#121212] rounded-[2rem] shadow-[8px_8px_0px_0px_#121212] flex items-center justify-center overflow-hidden"
+                style={{ backgroundColor: product.bg }}
+              >
+                <div className="text-8xl md:text-9xl opacity-80 select-none">{product.emoji}</div>
+              </motion.div>
+
+              {product.hot && (
+                <motion.div 
+                  animate={{ rotate: [0, 10, 0], y: [0, -10, 0] }} 
+                  transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                  className="absolute top-4 left-4 md:left-16 z-20"
+                >
+                  <svg width="90" height="90" viewBox="0 0 100 100" className="drop-shadow-[4px_4px_0px_#121212]">
+                    <polygon points="50,5 61,38 95,38 67,59 78,92 50,71 22,92 33,59 5,38 39,38" fill="#FF66B2" stroke="#121212" strokeWidth="4" />
+                  </svg>
+                  <span className="absolute inset-0 flex items-center justify-center text-[10px] font-black uppercase text-center px-4 text-white">🔥<br/>HOT</span>
+                </motion.div>
+              )}
+              
+              {product.verified && (
+                <motion.div 
+                  animate={{ y: [0, 15, 0] }} 
+                  transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                  className="absolute bottom-8 right-4 md:right-16 z-20 bg-[#D4FF33] border-2 border-[#121212] rounded-full px-4 py-2 shadow-[4px_4px_0px_0px_#121212] flex items-center gap-2"
+                >
+                  <BadgeCheckIcon />
+                  <span className="font-black uppercase text-sm">Verified</span>
+                </motion.div>
+              )}
+
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.85 }}
+                onClick={() => setLiked(!liked)}
+                className="absolute top-6 right-6 md:right-24 z-20 bg-white border-2 border-[#121212] rounded-full p-3 shadow-[4px_4px_0px_0px_#121212]"
+              >
+                <HeartIcon filled={liked} />
+              </motion.button>
+            </div>
+          </section>
+
+          <section className="relative z-30 max-w-3xl mx-auto px-4 pb-16" id="bid-card">
+            <motion.div 
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white border-2 border-[#121212] shadow-[12px_12px_0px_0px_#121212] p-6 md:p-8"
+            >
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-6 border-b-2 border-dashed border-[#121212]">
+                <div>
+                  <p className="text-[10px] uppercase font-bold text-gray-500 tracking-widest mb-2">Current Bid</p>
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <motion.span 
+                      key={currentBid}
+                      initial={{ scale: 1.3, color: "#D4FF33" }}
+                      animate={{ scale: 1, color: "#FF66B2" }}
+                      className="text-4xl md:text-5xl font-black tabular-nums"
+                    >
+                      ₹{currentBid.toLocaleString()}
+                    </motion.span>
+                    <div className="flex items-center gap-1 bg-[#D4FF33] px-2 py-1 rounded border-2 border-[#121212]">
+                      <TrendingUpIcon />
+                      <span className="text-[10px] font-black">+12%</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">{product.bids} bids · {viewers} watching</p>
+                </div>
+                
+                <div className="bg-[#121212] text-white p-4 rounded-2xl border-2 border-[#121212] text-center w-full md:w-auto min-w-[160px]">
+                  <p className="text-[10px] uppercase mb-1 tracking-widest text-[#D4FF33]">Auction Ends In</p>
+                  <span className="text-2xl md:text-3xl font-black font-mono tabular-nums">{formatTimeFull(time)}</span>
+                </div>
+              </div>
+
+              <div className="mb-6 pb-6 border-b-2 border-dashed border-[#121212]">
+                <p className="text-xs uppercase font-bold text-gray-500 tracking-widest mb-3">Select Size</p>
+                <div className="grid grid-cols-5 gap-2">
+                  {sizes.map((size) => (
+                    <motion.button
+                      key={size}
+                      whileHover={{ scale: 1.05, y: -2 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setSelectedSize(size)}
+                      className={`py-3 rounded-lg border-2 font-black transition-all ${
+                        selectedSize === size
+                          ? 'bg-[#121212] text-white border-[#121212] shadow-[3px_3px_0px_0px_#FF66B2]'
+                          : 'bg-white text-[#121212] border-[#121212] shadow-[3px_3px_0px_0px_#121212]'
+                      }`}
+                    >
+                      {size}
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+              
+              <motion.button
+                whileHover={selectedSize ? { x: 4, y: 4, boxShadow: "0px 0px 0px 0px #121212" } : {}}
+                whileTap={selectedSize ? { x: 8, y: 8, boxShadow: "0px 0px 0px 0px #121212" } : {}}
+                onClick={handlePlaceBid}
+                disabled={!selectedSize}
+                className={`w-full border-2 border-[#121212] shadow-[6px_6px_0px_0px_#121212] font-black uppercase text-lg md:text-2xl py-4 rounded-2xl flex items-center justify-center gap-3 transition-all ${
+                  selectedSize 
+                    ? bidPlaced ? 'bg-[#D4FF33] text-[#121212]' : 'shine-btn text-[#121212] cursor-pointer' 
+                    : 'bg-gray-200 text-gray-500 cursor-not-allowed opacity-60'
+                }`}
+              >
+                {bidPlaced ? '✓ BID PLACED!' : selectedSize ? `PLACE BID · ₹${nextBid.toLocaleString()}` : 'SELECT SIZE TO BID'} 
+                {!bidPlaced && <ArrowRightIcon />}
+              </motion.button>
+
+              <div className="flex gap-2 mt-3">
+                <button className="flex-1 bg-white border-2 border-[#121212] shadow-[3px_3px_0px_0px_#121212] py-2.5 rounded-xl font-bold uppercase text-xs flex items-center justify-center gap-2 hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_#121212] transition-all">
+                  <ShareIcon /> Share
+                </button>
+                <button className="flex-1 bg-white border-2 border-[#121212] shadow-[3px_3px_0px_0px_#121212] py-2.5 rounded-xl font-bold uppercase text-xs flex items-center justify-center gap-2 hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_#121212] transition-all">
+                  <StarIcon /> Save
+                </button>
+              </div>
+            </motion.div>
+          </section>
+
+          <AnimatePresence>
+            {showConfetti && (
+              <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+                {[...Array(60)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ y: -50, x: Math.random() * window.innerWidth, rotate: 0, opacity: 1 }}
+                    animate={{ y: window.innerHeight + 100, x: Math.random() * window.innerWidth, rotate: Math.random() * 720 - 360, opacity: 0 }}
+                    transition={{ duration: 2.5 + Math.random() * 1.5, ease: "easeOut" }}
+                    className="absolute"
+                    style={{
+                      width: `${8 + Math.random() * 8}px`,
+                      height: `${8 + Math.random() * 8}px`,
+                      backgroundColor: ['#FF66B2', '#33CCFF', '#D4FF33', '#FFFFFF', '#121212'][Math.floor(Math.random() * 5)],
+                      borderRadius: Math.random() > 0.5 ? '50%' : '2px',
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </AnimatePresence>
+        </>
+      );
+    }
+
+    // --- MAIN APP ---
+    function LiveDropLandingPage() {
+      const [selectedCategory, setSelectedCategory] = useState('all');
+      const [featuredProduct, setFeaturedProduct] = useState(PRODUCTS.find(p => p.id === 7));
+      const [searchQuery, setSearchQuery] = useState('');
+      const gridRef = useRef(null);
+
+      const categoryCounts = CATEGORIES.reduce((acc, cat) => {
+        if (cat.id === 'all') {
+          acc[cat.id] = PRODUCTS.length;
+        } else {
+          acc[cat.id] = PRODUCTS.filter(p => p.category === cat.id).length;
+        }
+        return acc;
+      }, {});
+
+      const filteredProducts = PRODUCTS.filter(p => {
+        const matchesCategory = selectedCategory === 'all' || p.category === selectedCategory;
+        const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
+        const notFeatured = p.id !== featuredProduct.id;
+        return matchesCategory && matchesSearch && notFeatured;
+      });
+
+      const handleCategorySelect = (catId) => {
+        setSelectedCategory(catId);
+        // Auto-select the top product in this category as featured
+        const topProduct = PRODUCTS.find(p => catId === 'all' ? p.hot : p.category === catId);
+        if (topProduct) setFeaturedProduct(topProduct);
+        setTimeout(() => {
+          gridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      };
+
+      const handleProductClick = (product) => {
+        setFeaturedProduct(product);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
+
+      return (
+        <div className="min-h-screen bg-[#F4F0EA] text-[#121212] overflow-hidden font-sans relative">
+          
+          <div className="absolute inset-0 opacity-[0.04] pointer-events-none">
+            <div className="absolute inset-0" style={{
+              backgroundImage: 'repeating-linear-gradient(45deg, #121212, #121212 2px, transparent 2px, transparent 35px)',
+            }} />
+          </div>
+
+          {/* Top Navigation */}
+          <nav className="sticky top-0 z-50 p-3 md:p-4 backdrop-blur-md bg-[#F4F0EA]/80">
+            <div className="max-w-7xl mx-auto bg-white border-2 border-[#121212] rounded-full flex items-center justify-between p-1.5 pl-5 shadow-[4px_4px_0px_0px_#121212]">
+              <div className="text-lg md:text-xl font-black uppercase tracking-tighter flex-shrink-0">HypeThrift</div>
+              
+              <div className="hidden md:flex flex-1 overflow-hidden mx-4 h-10 items-center">
+                <div className="flex gap-8 whitespace-nowrap animate-marquee">
+                  {[...Array(2)].map((_, i) => (
+                    <div key={i} className="flex gap-8">
+                      <span className="font-bold text-[#FF66B2] flex items-center gap-2"><ZapIcon fill="#FF66B2" stroke="#FF66B2" /> {PRODUCTS.length} LIVE DROPS</span>
+                      <span className="font-bold text-[#33CCFF] flex items-center gap-2"><ZapIcon fill="#33CCFF" stroke="#33CCFF" /> BID NOW OR CRY LATER</span>
+                      <span className="font-bold text-white flex items-center gap-2 bg-[#121212] px-2 rounded-full"><ZapIcon stroke="white" /> NEW DAILY</span>
+                      <span className="font-bold text-[#FF66B2] flex items-center gap-2"><ZapIcon fill="#FF66B2" stroke="#FF66B2" /> AUTHENTICATED</span>
+                      <span className="font-bold text-[#33CCFF] flex items-center gap-2"><ZapIcon fill="#33CCFF" stroke="#33CCFF" /> HYPE OR DIE</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <motion.div 
+                  animate={{ scale: [1, 1.05, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="hidden sm:flex items-center gap-1.5 bg-[#FF66B2] px-3 py-1.5 rounded-full border-2 border-[#121212]"
+                >
+                  <div className="w-1.5 h-1.5 bg-white rounded-full live-dot"></div>
+                  <span className="text-[11px] font-black text-white tabular-nums">{PRODUCTS.length} LIVE</span>
+                </motion.div>
+                <button className="bg-[#121212] text-white p-2.5 rounded-full hover:bg-[#D4FF33] hover:text-[#121212] transition-colors border-2 border-[#121212]">
+                  <UserIcon />
+                </button>
+              </div>
+            </div>
+          </nav>
+
+          {/* Category Bar */}
+          <CategoryBar 
+            selected={selectedCategory} 
+            onSelect={handleCategorySelect}
+            counts={categoryCounts}
+          />
+
+          {/* Search Bar */}
+          <div className="max-w-3xl mx-auto px-4 py-4">
+            <div className="relative">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#121212]/60">
+                <SearchIcon />
+              </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={`Search in ${CATEGORIES.find(c => c.id === selectedCategory)?.name}...`}
+                className="w-full bg-white border-2 border-[#121212] rounded-full py-3 pl-12 pr-4 font-bold text-sm placeholder:text-[#121212]/40 focus:outline-none focus:shadow-[4px_4px_0px_0px_#121212] transition-shadow"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 bg-[#121212] text-white rounded-full flex items-center justify-center text-xs font-black"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Featured Product (Bidding Card) */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={featuredProduct.id}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <BiddingCard product={featuredProduct} />
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Products Grid */}
+          <section ref={gridRef} className="max-w-7xl mx-auto px-4 pb-20">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tight">
+                  {CATEGORIES.find(c => c.id === selectedCategory)?.emoji}{' '}
+                  {searchQuery ? `Results for "${searchQuery}"` : CATEGORIES.find(c => c.id === selectedCategory)?.name}
+                </h2>
+                <p className="text-sm text-gray-500 font-bold mt-1">
+                  {filteredProducts.length} live {filteredProducts.length === 1 ? 'drop' : 'drops'} available
+                </p>
+              </div>
+              <div className="hidden md:flex items-center gap-2 bg-white border-2 border-[#121212] rounded-full px-4 py-2 shadow-[2px_2px_0px_0px_#121212]">
+                <span className="text-xs font-black uppercase">Sort:</span>
+                <select className="bg-transparent text-xs font-black uppercase focus:outline-none cursor-pointer">
+                  <option>Ending Soon</option>
+                  <option>Price: Low</option>
+                  <option>Price: High</option>
+                  <option>Most Bids</option>
+                </select>
+              </div>
+            </div>
+
+            {filteredProducts.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <AnimatePresence mode="popLayout">
+                  {filteredProducts.map((product, index) => (
+                    <ProductCard 
+                      key={product.id} 
+                      product={product} 
+                      onClick={handleProductClick}
+                      index={index}
+                    />
+                  ))}
+                </AnimatePresence>
+              </div>
+            ) : (
+              <div className="text-center py-16">
+                <div className="text-6xl mb-4">🔍</div>
+                <h3 className="text-2xl font-black mb-2">No drops found</h3>
+                <p className="text-gray-500 font-bold mb-6">Try a different category or search term</p>
+                <button
+                  onClick={() => { setSearchQuery(''); setSelectedCategory('all'); }}
+                  className="bg-[#121212] text-white font-black uppercase px-6 py-3 rounded-full border-2 border-[#121212] shadow-[4px_4px_0px_0px_#D4FF33] hover:shadow-[2px_2px_0px_0px_#D4FF33] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+                >
+                  Show All Drops
+                </button>
+              </div>
+            )}
+          </section>
+
+          {/* Footer */}
+          <footer className="bg-[#121212] text-white p-8 text-center">
+            <div className="font-black text-2xl mb-2">HypeThrift ⚡</div>
+            <p className="text-sm text-gray-400 font-bold">Bid. Win. Flex. Repeat.</p>
+            <p className="text-xs text-gray-500 mt-4">© 2026 HypeThrift. All drops authenticated. All bids final.</p>
+          </footer>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<LiveDropLandingPage />);
+  </script>
+</body>
+</html>
