@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import Link from "next/link";
 import BidForm from "@/components/listing/BidForm";
 import BidHistory from "@/components/listing/BidHistory";
+import SaveButton from "@/components/listing/SaveButton";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -41,6 +42,9 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
   if (!listing) notFound();
 
   const session = await auth();
+  const isSaved = session?.user
+    ? (await prisma.savedItem.count({ where: { userId: session.user.id, listingId: id } })) > 0
+    : false;
   const currentBid = listing.currentBid ?? listing.startingBid;
   const nextMin = currentBid + listing.bidIncrement;
   const endsMs = new Date(listing.endsAt).getTime();
@@ -52,15 +56,22 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
     <div className="grid lg:grid-cols-3 gap-8">
       <div className="lg:col-span-2 space-y-6">
         <div className="bg-white border-2 border-ink shadow-brut-2xl rounded-3xl p-6">
-          {listing.images.length > 0 ? (
-            <div className="aspect-[4/3] rounded-2xl border-2 border-ink overflow-hidden mb-4">
-              <img src={listing.images[0]} alt={listing.title} className="w-full h-full object-cover" />
-            </div>
-          ) : (
-            <div className="aspect-[4/3] rounded-2xl border-2 border-dashed border-ink/30 bg-gray-50 flex items-center justify-center text-6xl mb-4">
-              📦
-            </div>
-          )}
+          <div className="relative">
+            {listing.images.length > 0 ? (
+              <div className="aspect-[4/3] rounded-2xl border-2 border-ink overflow-hidden mb-4">
+                <img src={listing.images[0]} alt={listing.title} className="w-full h-full object-cover" />
+              </div>
+            ) : (
+              <div className="aspect-[4/3] rounded-2xl border-2 border-dashed border-ink/30 bg-gray-50 flex items-center justify-center text-6xl mb-4">
+                📦
+              </div>
+            )}
+            {session?.user && (
+              <div className="absolute top-3 right-3">
+                <SaveButton listingId={listing.id} initiallySaved={isSaved} />
+              </div>
+            )}
+          </div>
           <h1 className="text-3xl font-black uppercase mb-2">{listing.title}</h1>
           <p className="text-gray-600 font-bold mb-4">
             Listed in {listing.category.emoji} {listing.category.name}

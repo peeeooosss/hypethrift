@@ -93,15 +93,16 @@ model User {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  accounts      Account[]
-  sessions      Session[]
-  listings      Listing[]
-  bids          Bid[]
-  buyerOrders   Order[]       @relation("BuyerOrders")
-  sellerOrders  Order[]       @relation("SellerOrders")
-  addresses     Address[]
-  payouts       Payout[]
-  supportTickets SupportTicket[]
+   accounts      Account[]
+   sessions      Session[]
+   listings      Listing[]
+   bids          Bid[]
+   buyerOrders   Order[]       @relation("BuyerOrders")
+   sellerOrders  Order[]       @relation("SellerOrders")
+   addresses     Address[]
+   payouts       Payout[]
+   supportTickets SupportTicket[]
+   savedItems    SavedItem[]
 }
 
 model Address {
@@ -153,10 +154,11 @@ model Listing {
    createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  category Category @relation(fields: [categoryId], references: [id])
-  seller   User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-  bids     Bid[]
-  order    Order?
+   category Category @relation(fields: [categoryId], references: [id])
+   seller   User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+   bids     Bid[]
+   order    Order?
+   savedItems SavedItem[]
 
    @@index([status])
    @@index([categoryId])
@@ -182,8 +184,21 @@ model Bid {
   listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
   bidder  User    @relation(fields: [bidderId], references: [id], onDelete: Cascade)
 
-  @@index([listingId])
-  @@index([bidderId])
+   @@index([listingId])
+   @@index([bidderId])
+}
+
+model SavedItem {
+  id        String   @id @default(cuid())
+  userId    String
+  listingId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
+  @@index([userId])
 }
 
 model Order {

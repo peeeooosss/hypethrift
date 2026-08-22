@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 import SizeFilter from "@/components/listing/SizeFilter";
+import SaveButton from "@/components/listing/SaveButton";
 
 function money(n: number | null | undefined) {
   if (n == null) return "—";
@@ -31,13 +33,19 @@ export default async function ListingsIndexPage({
     ...(selectedSizes.length > 0 && { size: { in: selectedSizes } }),
   };
 
-  const [listings, categories] = await Promise.all([
+  const session = await auth();
+  const [listings, categories, savedIds] = await Promise.all([
     prisma.listing.findMany({
       where,
       orderBy: { createdAt: "desc" },
       include: { category: true },
     }),
     prisma.category.findMany({ where: { slug: { not: "all" } }, orderBy: { name: "asc" } }),
+    session
+      ? prisma.savedItem
+          .findMany({ where: { userId: session.user.id }, select: { listingId: true } })
+          .then((r) => new Set(r.map((x) => x.listingId)))
+      : Promise.resolve(new Set<string>()),
   ]);
 
   return (
@@ -75,26 +83,31 @@ export default async function ListingsIndexPage({
           <p className="font-bold text-gray-500 uppercase">No live auctions right now.</p>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {listings.map((l) => {
-              const mins = (new Date(l.endsAt).getTime() - Date.now()) / (1000 * 60);
-              return (
-                <Link key={l.id} href={`/listing/${encodeURIComponent(l.id)}`} className="group">
-                  <div className="bg-white border-2 border-ink shadow-brut-lg rounded-3xl p-5 aspect-[4/5] flex flex-col">
-                    <div className="flex-1 flex items-center justify-center text-5xl mb-3">{l.category.emoji}</div>
-                    <h3 className="font-black text-sm uppercase text-center mb-2 line-clamp-2">{l.title}</h3>
-                     <div className="text-center">
-                       <span className="font-black block text-lg">{money(l.currentBid ?? l.startingBid)}</span>
-                       <span className="text-xs uppercase font-black text-gray-500">
-                         {l.bidCount} bids · {endsIn(mins)} left
-                       </span>
-                     </div>
-                     {l.size && (
-                       <div className="mt-2 text-center">
-                         <span className="text-xs font-black uppercase bg-ink/5 border border-ink/20 rounded-full py-1 px-2">{l.size}</span>
-                       </div>
-                     )}
+              {listings.map((l) => {
+               const mins = (new Date(l.endsAt).getTime() - Date.now()) / (1000 * 60);
+               return (
+                 <div key={l.id} className="bg-white border-2 border-ink shadow-brut-lg rounded-3xl p-5 aspect-[4/5] flex flex-col relative">
+                {session?.user && (
+                  <div className="absolute top-2 right-2 z-10">
+                    <SaveButton listingId={l.id} initiallySaved={savedIds.has(l.id)} size="sm" />
                   </div>
-                </Link>
+                )}
+                   <Link href={`/listing/${encodeURIComponent(l.id)}`} className="group">
+                     <div className="flex-1 flex items-center justify-center text-5xl mb-3">{l.category.emoji}</div>
+                     <h3 className="font-black text-sm uppercase text-center mb-2 line-clamp-2">{l.title}</h3>
+                   </Link>
+                   <div className="text-center">
+                     <span className="font-black block text-lg">{money(l.currentBid ?? l.startingBid)}</span>
+                     <span className="text-xs uppercase font-black text-gray-500">
+                       {l.bidCount} bids · {endsIn(mins)} left
+                     </span>
+                   </div>
+                   {l.size && (
+                     <div className="mt-2 text-center">
+                       <span className="text-xs font-black uppercase bg-ink/5 border border-ink/20 rounded-full py-1 px-2">{l.size}</span>
+                     </div>
+                   )}
+                 </div>
               );
             })}
           </div>

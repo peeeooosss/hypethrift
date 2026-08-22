@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import SaveButton from "@/components/listing/SaveButton";
 
 function money(n: number | null | undefined) {
   if (n == null) return "—";
@@ -13,12 +15,20 @@ function endsIn(minutes: number) {
 }
 
 export default async function LiveAuctionsStrip() {
-  const listings = await prisma.listing.findMany({
-    where: { status: "ACTIVE", endsAt: { gt: new Date() } },
-    orderBy: { currentBid: { sort: "desc" } },
-    include: { category: true },
-    take: 6,
-  });
+  const session = await auth();
+  const [listings, savedIds] = await Promise.all([
+    prisma.listing.findMany({
+      where: { status: "ACTIVE", endsAt: { gt: new Date() } },
+      orderBy: { currentBid: { sort: "desc" } },
+      include: { category: true },
+      take: 6,
+    }),
+    session
+      ? prisma.savedItem
+          .findMany({ where: { userId: session.user.id }, select: { listingId: true } })
+          .then((r) => new Set(r.map((x) => x.listingId)))
+      : Promise.resolve(new Set<string>()),
+  ]);
 
   if (listings.length === 0) return null;
 
@@ -39,8 +49,13 @@ export default async function LiveAuctionsStrip() {
           const mins = (new Date(l.endsAt).getTime() - Date.now()) / (1000 * 60);
           const href = `/listing/${encodeURIComponent(l.id)}`;
           return (
-            <Link key={l.id} href={href} className="group">
-              <div className="bg-white border-2 border-ink shadow-brut-lg rounded-3xl p-4 aspect-[4/5] flex flex-col">
+            <div key={l.id} className="bg-white border-2 border-ink shadow-brut-lg rounded-3xl p-4 aspect-[4/5] flex flex-col relative group">
+              {session?.user && (
+                <div className="absolute top-1 right-1 z-10">
+                  <SaveButton listingId={l.id} initiallySaved={savedIds.has(l.id)} size="sm" />
+                </div>
+              )}
+              <Link href={href} className="group">
                 <div className="flex-1 flex items-center justify-center text-4xl mb-3">{l.category.emoji}</div>
                 <h3 className="font-black text-sm uppercase text-center mb-2 line-clamp-2">{l.title}</h3>
                 <div className="text-center">
@@ -53,8 +68,8 @@ export default async function LiveAuctionsStrip() {
                   </span>
                 )}
                 <div className="mt-2 text-center text-xs font-black text-bubblegum">{endsIn(mins)} left</div>
-              </div>
-            </Link>
+              </Link>
+            </div>
           );
         })}
       </div>
