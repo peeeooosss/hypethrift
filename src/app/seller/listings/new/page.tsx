@@ -1,8 +1,7 @@
-export default function SellerNewListingPage() {
-  return (
-    <div className="bg-white border-2 border-ink shadow-brut-lg rounded-2xl p-6">
-      <h1 className="text-2xl font-black uppercase mb-2">Create New Drop</h1>
-      <p className="text-gray-500 font-bold">Listing creation form arrives in Phase 3.</p>
-    </div>
-  );
+import { prisma } from "@/lib/prisma";
+import NewListingForm from "@/components/seller/NewListingForm";
+
+export default async function NewListingPage() {
+  const categories = await prisma.category.findMany({ orderBy: { name: "asc" } });
+  return <NewListingForm categories={categories} />;
 }

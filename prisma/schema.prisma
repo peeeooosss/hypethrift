@@ -140,6 +140,8 @@ model Listing {
   currentBid    Int?
   bidIncrement  Int           @default(50)
   reservePrice  Int?
+  size          String?
+  condition     ListingCondition?
   status        ListingStatus @default(DRAFT)
   featured      Boolean       @default(false)
   verified      Boolean       @default(false)
@@ -158,6 +160,14 @@ model Listing {
   @@index([status])
   @@index([categoryId])
   @@index([sellerId])
+}
+
+enum ListingCondition {
+  NEW
+  LIKE_NEW
+  EXCELLENT
+  GOOD
+  FAIR
 }
 
 model Bid {
