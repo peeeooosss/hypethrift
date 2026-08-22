@@ -87,6 +87,8 @@ model User {
   image         String?
   role          UserRole      @default(CUSTOMER)
   sellerStatus  SellerStatus?
+  sellerNote    String?       // admin note on rejection
+  isBanned      Boolean       @default(false)
   phone         String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
