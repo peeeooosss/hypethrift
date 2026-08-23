@@ -16,6 +16,10 @@ export const authConfig = {
       const role = auth?.user?.role;
       const path = nextUrl.pathname;
 
+      if (path === "/seller/login" || path === "/admin/login") {
+        return true;
+      }
+
       if (path.startsWith("/admin")) {
         if (!isLoggedIn) return false;
         return role === "ADMIN";

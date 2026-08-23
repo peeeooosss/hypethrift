@@ -14,7 +14,7 @@ import type { CategoryId, Product } from "@/types";
 
 const DEFAULT_FEATURED_ID = 7;
 
-export default function LiveDropLandingPage({ liveCount }: { liveCount?: number }) {
+export default function LiveDropLandingPage() {
   const [selectedCategory, setSelectedCategory] = useState<CategoryId>("all");
   const [featuredProduct, setFeaturedProduct] = useState<Product>(
     () => PRODUCTS.find((p) => p.id === DEFAULT_FEATURED_ID) ?? PRODUCTS[0],

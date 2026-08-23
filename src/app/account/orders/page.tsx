@@ -10,12 +10,12 @@ function money(n: number | null | undefined) {
 }
 
 const ORDER_LABEL: Record<string, string> = {
-  PENDING_PAYMENT: "Pending Payment",
-  PAID: "Paid",
-  SHIPPED: "Shipped",
-  DELIVERED: "Delivered",
+  PENDING_CONTACT_FEE: "Contact fee required",
+  WAITING_VERIFICATION: "Waiting for verification",
+  CONTACT_FEE_PAID: "Contact fee paid",
+  COMPLETED: "Completed",
   CANCELLED: "Cancelled",
-  REFUNDED: "Refunded",
+  REJECTED: "Rejected",
 };
 
 export default async function AccountOrdersPage() {
@@ -72,9 +72,15 @@ export default async function AccountOrdersPage() {
                 <div className="text-right">
                   <span className="font-black text-lg block">{money(o.finalPrice)}</span>
                   <span className="text-xs font-black uppercase">{ORDER_LABEL[o.status] ?? o.status}</span>
-                  {o.status === "PENDING_PAYMENT" && (
+                  <Link
+                    href={`/account/orders/${o.id}`}
+                    className="mt-1 inline-block text-xs font-black text-ink hover:underline"
+                  >
+                    View status →
+                  </Link>
+                  {(o.status === "PENDING_CONTACT_FEE" || o.status === "REJECTED") && (
                     <Link
-                      href={`/checkout/${o.id}`}
+                      href={`/account/orders/${o.id}`}
                       className="mt-1 inline-block text-xs font-black text-acid hover:underline"
                     >
                       Pay Now →

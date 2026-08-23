@@ -6,10 +6,12 @@ export default async function AdminSellersPage() {
     prisma.user.findMany({
       where: { role: "SELLER", sellerStatus: "PENDING" },
       orderBy: { createdAt: "desc" },
+      include: { sellerProfile: true },
     }),
     prisma.user.findMany({
       where: { role: "SELLER", sellerStatus: "APPROVED" },
       orderBy: { createdAt: "desc" },
+      include: { sellerProfile: true },
     }),
   ]);
 
@@ -27,6 +29,9 @@ export default async function AdminSellersPage() {
               <tr className="border-b-2 border-dashed border-ink/20">
                 <th className="pb-2 text-xs uppercase font-black text-gray-500">Seller</th>
                 <th className="pb-2 text-xs uppercase font-black text-gray-500">Email</th>
+                <th className="pb-2 text-xs uppercase font-black text-gray-500">Store</th>
+                <th className="pb-2 text-xs uppercase font-black text-gray-500">WhatsApp</th>
+                <th className="pb-2 text-xs uppercase font-black text-gray-500">Location</th>
                 <th className="pb-2 text-xs uppercase font-black text-gray-500">Applied</th>
                 <th className="pb-2 text-xs uppercase font-black text-right">Actions</th>
               </tr>
@@ -36,6 +41,9 @@ export default async function AdminSellersPage() {
                 <tr key={u.id} className="border-b border-ink/10">
                   <td className="py-3 font-black">{u.name ?? "—"}</td>
                   <td className="py-3 text-sm">{u.email}</td>
+                  <td className="py-3 text-sm font-black">{u.sellerProfile?.storeName ?? "—"}</td>
+                  <td className="py-3 text-sm">{u.sellerProfile?.whatsappNumber ?? "—"}</td>
+                  <td className="py-3 text-sm">{u.sellerProfile?.location ?? "—"}</td>
                   <td className="py-3 text-xs text-gray-500">{new Date(u.createdAt).toLocaleDateString()}</td>
                   <td className="py-3 text-right space-x-2">
                     <form action={approveSeller} className="inline">

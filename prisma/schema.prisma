@@ -28,20 +28,27 @@ enum ListingStatus {
   REJECTED
 }
 
-enum OrderStatus {
-  PENDING_PAYMENT
-  PAID
-  SHIPPED
-  DELIVERED
-  CANCELLED
-  REFUNDED
-}
-
 enum PayoutStatus {
   PENDING
   PROCESSING
   COMPLETED
   REJECTED
+}
+
+enum CreditPurchaseStatus {
+  PENDING_PAYMENT
+  WAITING_VERIFICATION
+  COMPLETED
+  REJECTED
+}
+
+enum OrderStatus {
+  PENDING_CONTACT_FEE
+  WAITING_VERIFICATION
+  CONTACT_FEE_PAID
+  COMPLETED
+  REJECTED
+  CANCELLED
 }
 
 model Account {
@@ -90,19 +97,23 @@ model User {
   sellerNote    String?       // admin note on rejection
   isBanned      Boolean       @default(false)
   phone         String?
+  whatsappNumber String?
+  listingCredits Int          @default(0)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-   accounts      Account[]
-   sessions      Session[]
-   listings      Listing[]
-   bids          Bid[]
-   buyerOrders   Order[]       @relation("BuyerOrders")
-   sellerOrders  Order[]       @relation("SellerOrders")
-   addresses     Address[]
-   payouts       Payout[]
-   supportTickets SupportTicket[]
-   savedItems    SavedItem[]
+   accounts         Account[]
+   sessions         Session[]
+   listings         Listing[]
+   bids             Bid[]
+   buyerOrders      Order[]       @relation("BuyerOrders")
+   sellerOrders     Order[]       @relation("SellerOrders")
+   addresses        Address[]
+   payouts          Payout[]
+   supportTickets   SupportTicket[]
+   savedItems       SavedItem[]
+   sellerProfile    SellerProfile?
+   creditPurchases  CreditPurchase[]
 }
 
 model Address {
@@ -207,10 +218,17 @@ model Order {
   buyerId         String
   sellerId        String
   finalPrice      Int
-  status          OrderStatus @default(PENDING_PAYMENT)
+  platformFee     Int         @default(69)
+  status          OrderStatus @default(PENDING_CONTACT_FEE)
   shippingAddress Json?
   razorpayOrderId String?
   paymentId       String?
+  buyerPhone      String?
+  buyerAgreementAccepted Boolean @default(false)
+  paidVia         String?
+  contactFeeConfirmed Boolean @default(false)
+  paymentDeadline DateTime?
+  sellerOrderDetails Json?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
@@ -241,4 +259,38 @@ model SupportTicket {
   updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id])
+}
+
+model SellerProfile {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  storeName         String
+  storeDescription  String?
+  location          String?
+  whatsappNumber    String
+  returnPolicy      String?
+  acceptedAgreement Boolean  @default(false)
+  acceptedAt        DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CreditPurchase {
+  id        String               @id @default(cuid())
+  userId    String
+  package   String
+  amount    Int
+  credits   Int
+  paidVia   String?
+  status    CreditPurchaseStatus @default(WAITING_VERIFICATION)
+  proofUrl  String?
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
 }

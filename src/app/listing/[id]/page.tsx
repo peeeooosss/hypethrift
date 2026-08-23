@@ -54,7 +54,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
     !!session?.user && listing.status === "ACTIVE" && !isEnded && session.user.id !== listing.sellerId;
 
   const winningBid = isEnded
-    ? listing.bids.reduce((top, b) => (b.amount > (top?.amount ?? 0) ? b : top), undefined as typeof listing.bids[0] | undefined)
+    ? (await prisma.bid.findFirst({ where: { listingId: listing.id }, orderBy: [{ amount: "desc" }, { createdAt: "asc" }] })) ?? undefined
     : undefined;
 
   const existingOrder = isEnded && winningBid
@@ -190,12 +190,12 @@ function EndedAuctionView({
   currentUserId?: string;
 }) {
   const ORDER_LABEL: Record<string, string> = {
-    PENDING_PAYMENT: "Pending Payment",
-    PAID: "Paid",
-    SHIPPED: "Shipped",
-    DELIVERED: "Delivered",
+    PENDING_CONTACT_FEE: "Contact fee required",
+    WAITING_VERIFICATION: "Waiting for verification",
+    CONTACT_FEE_PAID: "Seller details unlocked",
+    COMPLETED: "Completed",
     CANCELLED: "Cancelled",
-    REFUNDED: "Refunded",
+    REJECTED: "Payment rejected",
   };
 
   if (!winningBid && !existingOrder) {
@@ -209,7 +209,7 @@ function EndedAuctionView({
     );
   }
 
-  if (listing.reservePrice && !listing.currentBid && (listing.currentBid ?? 0) < listing.reservePrice) {
+  if (listing.reservePrice && (listing.currentBid ?? 0) < listing.reservePrice) {
     return (
       <div className="bg-white border-2 border-ink shadow-brut-lg rounded-3xl p-6">
         <div className="text-center">
@@ -225,7 +225,7 @@ function EndedAuctionView({
   const isWinner = winningBid?.bidderId === currentUserId;
   const orderStatus = existingOrder?.status;
 
-  if (orderStatus === "PAID" || orderStatus === "SHIPPED" || orderStatus === "DELIVERED") {
+  if (orderStatus === "CONTACT_FEE_PAID" || orderStatus === "COMPLETED") {
     return (
       <div className="bg-white border-2 border-ink shadow-brut-lg rounded-3xl p-6">
         <div className="text-center">
@@ -264,9 +264,9 @@ function EndedAuctionView({
         </form>
       )}
 
-      {isWinner && existingOrder && orderStatus === "PENDING_PAYMENT" && (
+      {isWinner && existingOrder && (orderStatus === "PENDING_CONTACT_FEE" || orderStatus === "REJECTED") && (
         <Link
-          href={`/checkout/${existingOrder.id}`}
+          href={`/account/bids/${encodeURIComponent(listing.id)}/contact`}
           className="block text-center bg-bubblegum border-2 border-ink shadow-brut-md py-3 rounded-2xl font-black uppercase text-sm hover:bg-acid transition-colors"
         >
           Complete Payment

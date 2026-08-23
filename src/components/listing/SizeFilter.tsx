@@ -5,13 +5,14 @@ import { getSizesForCategory } from "@/lib/sizes";
 
 interface SizeFilterProps {
   categorySlug: string;
+  availableSizes?: string[];
 }
 
-export default function SizeFilter({ categorySlug }: SizeFilterProps) {
+export default function SizeFilter({ categorySlug, availableSizes }: SizeFilterProps) {
   const router = useRouter();
   const search = useSearchParams();
   const pathname = usePathname();
-  const available = getSizesForCategory(categorySlug);
+  const available = availableSizes ?? getSizesForCategory(categorySlug);
 
   const selectedRaw = search.get("sizes");
   const selected = selectedRaw ? selectedRaw.split(",").filter(Boolean) : [];
@@ -53,9 +54,13 @@ export default function SizeFilter({ categorySlug }: SizeFilterProps) {
           );
         })}
         {selected.length > 0 && (
-          <button
-            type="button"
-            onClick={() => toggle("__clear__")}
+           <button
+             type="button"
+             onClick={() => {
+               const params = new URLSearchParams(search.toString());
+               params.delete("sizes");
+               router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+             }}
             className="text-xs font-black uppercase px-3 py-1 rounded-full border-2 border-ink bg-bubblegum text-ink hover:bg-ink hover:text-white"
           >
             Clear

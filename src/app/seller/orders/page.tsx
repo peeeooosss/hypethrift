@@ -1,133 +1,81 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { markOrderShipped, markOrderDelivered } from "@/actions/auction-actions";
-
-function money(n: number | null | undefined) {
-  if (n == null) return "—";
-  return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(n);
-}
-
-const ORDER_STATUS_LABELS: Record<string, string> = {
-  PENDING_PAYMENT: "Pending Payment",
-  PAID: "Paid",
-  SHIPPED: "Shipped",
-  DELIVERED: "Delivered",
-  CANCELLED: "Cancelled",
-  REFUNDED: "Refunded",
-};
+import { markOrderCompleted, reportBuyerNoPayment, updateSellerOrderDetails } from "@/actions/auction-actions";
+import { formatAddress } from "@/lib/platform";
 
 export const revalidate = 0;
+
+const LABELS: Record<string, string> = {
+  PENDING_CONTACT_FEE: "Waiting for buyer",
+  WAITING_VERIFICATION: "Waiting for admin",
+  CONTACT_FEE_PAID: "Details unlocked",
+  COMPLETED: "Completed",
+  REJECTED: "Payment rejected",
+  CANCELLED: "Cancelled",
+};
 
 export default async function SellerOrdersPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
-  if (!["SELLER", "ADMIN"].includes(session.user.role)) redirect("/account");
+  if (session.user.role !== "SELLER" && session.user.role !== "ADMIN") redirect("/account");
 
   const orders = await prisma.order.findMany({
     where: { sellerId: session.user.id },
     orderBy: { createdAt: "desc" },
-    include: {
-      listing: { include: { category: true } },
-      buyer: { select: { name: true, email: true } },
-    },
+    include: { listing: { include: { category: true } }, buyer: { select: { name: true, email: true } } },
   });
 
   return (
     <div className="space-y-8">
-      <h1 className="text-3xl font-black uppercase">Sold Orders</h1>
+      <div><h1 className="text-3xl font-black uppercase">Closed Bids</h1><p className="text-gray-500 font-bold mt-2">Manage buyer contact, payment, and completion for each winning bid.</p></div>
+      {orders.length === 0 ? (
+        <div className="bg-white border-2 border-ink shadow-brut-lg rounded-2xl p-8 text-center"><p className="text-gray-500 font-bold">No closed bids yet.</p></div>
+      ) : (
+        <div className="space-y-5">
+          {orders.map((order) => {
+            const details = order.sellerOrderDetails && typeof order.sellerOrderDetails === "object" ? order.sellerOrderDetails as Record<string, unknown> : {};
+            const unlocked = order.status === "CONTACT_FEE_PAID" || order.status === "COMPLETED";
+            return (
+              <article key={order.id} className="bg-white border-2 border-ink shadow-brut-lg rounded-3xl p-5 md:p-6">
+                <div className="flex flex-wrap justify-between gap-3">
+                  <div><p className="font-black uppercase">{order.listing.category.emoji} {order.listing.title}</p><p className="text-xs text-gray-500 font-bold mt-1">Order ID: {order.id}</p><p className="text-sm font-black mt-1">Winning bid: ₹{order.finalPrice.toLocaleString("en-IN")}</p></div>
+                  <span className="h-fit bg-ink text-white border-2 border-ink rounded-full px-3 py-1 text-xs font-black uppercase">{LABELS[order.status] ?? order.status}</span>
+                </div>
 
-      <div className="bg-white border-2 border-ink shadow-brut-lg rounded-2xl overflow-x-auto">
-        {orders.length === 0 ? (
-          <div className="p-8 text-center">
-            <p className="text-gray-500 font-bold">No sold orders yet.</p>
-            <p className="text-sm text-gray-500 font-bold mt-2">
-              Orders from winning bids on your listings will appear here.
-            </p>
-          </div>
-        ) : (
-          <table className="w-full text-left">
-            <thead>
-              <tr className="border-b-2 border-dashed border-ink/20">
-                <th className="pb-3 text-xs uppercase font-black text-gray-500">Item</th>
-                <th className="pb-3 text-xs uppercase font-black text-gray-500">Buyer</th>
-                <th className="pb-3 text-xs uppercase font-black text-gray-500">Price</th>
-                <th className="pb-3 text-xs uppercase font-black text-gray-500">Status</th>
-                <th className="pb-3 text-xs uppercase font-black text-gray-500">Ship To</th>
-                <th className="pb-3 text-xs uppercase font-black text-gray-500 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((o) => {
-                const addr = o.shippingAddress as {
-                  line1?: string;
-                  line2?: string;
-                  city?: string;
-                  state?: string;
-                  pincode?: string;
-                } | null;
-                const canShip = o.status === "PAID";
-                const canDeliver = o.status === "SHIPPED";
-                return (
-                  <tr key={o.id} className="border-b border-ink/10">
-                    <td className="py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl border-2 border-ink bg-gray-100 flex items-center justify-center text-lg">
-                          {o.listing?.category?.emoji ?? "📦"}
-                        </div>
-                        <span className="font-black">{o.listing?.title ?? "—"}</span>
-                      </div>
-                    </td>
-                    <td className="py-3 text-sm">{o.buyer?.name ?? o.buyer?.email ?? "—"}</td>
-                    <td className="py-3 text-sm font-black">{money(o.finalPrice)}</td>
-                    <td className="py-3">
-                      <span className="inline-block px-2 py-1 rounded-xl text-xs font-black bg-gray-200">
-                        {ORDER_STATUS_LABELS[o.status] ?? o.status}
-                      </span>
-                    </td>
-                    <td className="py-3 text-xs">
-                      {addr ? (
-                        <>
-                          {addr.line1}
-                          {addr.line2 ? `, ${addr.line2}` : ""}
-                          <br />
-                          {addr.city}, {addr.state} — {addr.pincode}
-                        </>
-                      ) : (
-                        <span className="text-gray-400">No address</span>
-                      )}
-                    </td>
-                    <td className="py-3 text-right space-x-1">
-                      {canShip && (
-                        <form action={async (formData: FormData) => { await markOrderShipped(formData); }}>
-                          <input type="hidden" name="orderId" value={o.id} />
-                          <button
-                            type="submit"
-                            className="bg-acid border-2 border-ink px-3 py-1 rounded-full text-xs font-black hover:shadow-brut-xs"
-                          >
-                            Mark Shipped
-                          </button>
-                        </form>
-                      )}
-                      {canDeliver && (
-                        <form action={async (formData: FormData) => { await markOrderDelivered(formData); }}>
-                          <input type="hidden" name="orderId" value={o.id} />
-                          <button
-                            type="submit"
-                            className="bg-ink text-white border-2 border-ink px-3 py-1 rounded-full text-xs font-black hover:bg-acid hover:text-ink"
-                          >
-                            Mark Delivered
-                          </button>
-                        </form>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
+                {!unlocked ? (
+                  <p className="mt-5 bg-ink/5 border-2 border-dashed border-ink/20 rounded-xl p-4 text-sm font-bold text-gray-600">Buyer details stay hidden until the ₹69 contact fee is verified by admin.</p>
+                ) : (
+                  <div className="mt-5 grid lg:grid-cols-2 gap-5">
+                    <div className="bg-ink/5 border-2 border-ink/20 rounded-2xl p-4">
+                      <h2 className="font-black uppercase text-sm mb-3">Buyer details</h2>
+                      <p className="text-sm font-bold">{order.buyer.name ?? order.buyer.email}</p>
+                      <p className="text-sm font-bold mt-1">Phone: {order.buyerPhone ?? "Not provided"}</p>
+                      <p className="text-sm font-bold mt-1">Address: {formatAddress(order.shippingAddress)}</p>
+                    </div>
+                    <div className="bg-ink/5 border-2 border-ink/20 rounded-2xl p-4">
+                      <h2 className="font-black uppercase text-sm mb-3">Seller update</h2>
+                      <form action={async (formData: FormData) => { await updateSellerOrderDetails(formData); }} className="space-y-2">
+                        <input type="hidden" name="orderId" value={order.id} />
+                        <input name="trackingNumber" defaultValue={String(details.trackingNumber ?? "")} placeholder="Tracking number (optional)" className="w-full border-2 border-ink rounded-xl px-3 py-2 text-sm font-bold" />
+                        <input name="courier" defaultValue={String(details.courier ?? "")} placeholder="Courier / delivery method" className="w-full border-2 border-ink rounded-xl px-3 py-2 text-sm font-bold" />
+                        <textarea name="notes" defaultValue={String(details.notes ?? "")} placeholder="Notes for the buyer" rows={2} className="w-full border-2 border-ink rounded-xl px-3 py-2 text-sm font-bold" />
+                        <label className="flex gap-2 items-center text-xs font-black uppercase"><input type="checkbox" name="sellerPaymentReceived" defaultChecked={details.sellerPaymentReceived === true} /> Buyer paid me for the item</label>
+                        <button className="w-full bg-ink text-white border-2 border-ink rounded-xl py-2 text-xs font-black uppercase hover:bg-acid hover:text-ink">Save order details</button>
+                      </form>
+                    </div>
+                  </div>
+                )}
+
+                {order.status === "CONTACT_FEE_PAID" && <div className="flex flex-wrap gap-2 mt-5">
+                  <form action={async (formData: FormData) => { await markOrderCompleted(formData); }}><input type="hidden" name="orderId" value={order.id} /><button className="bg-acid border-2 border-ink px-4 py-2 rounded-full text-xs font-black uppercase hover:bg-bubblegum">Mark order completed</button></form>
+                  <form action={async (formData: FormData) => { await reportBuyerNoPayment(formData); }}><input type="hidden" name="orderId" value={order.id} /><button className="border-2 border-bubblegum px-4 py-2 rounded-full text-xs font-black uppercase hover:bg-bubblegum">Buyer did not pay</button></form>
+                </div>}
+              </article>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

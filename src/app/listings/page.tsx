@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import SizeFilter from "@/components/listing/SizeFilter";
 import SaveButton from "@/components/listing/SaveButton";
+import { getSizesForCategory } from "@/lib/sizes";
 
 function money(n: number | null | undefined) {
   if (n == null) return "—";
@@ -25,16 +26,19 @@ export default async function ListingsIndexPage({
   const { q, cat, sizes: sizesParam } = await searchParams;
   const selectedSizes = sizesParam ? sizesParam.split(",").filter(Boolean) : [];
   const effectiveCat = cat && cat !== "all" ? cat : "";
-  const where = {
+  const categoryWhere = {
     status: "ACTIVE" as const,
     endsAt: { gt: new Date() },
     ...(q && { title: { contains: q, mode: "insensitive" as const } }),
     ...(effectiveCat && { category: { slug: effectiveCat } }),
+  };
+  const where = {
+    ...categoryWhere,
     ...(selectedSizes.length > 0 && { size: { in: selectedSizes } }),
   };
 
   const session = await auth();
-  const [listings, categories, savedIds] = await Promise.all([
+  const [listings, categories, savedIds, sizeRows] = await Promise.all([
     prisma.listing.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -46,7 +50,11 @@ export default async function ListingsIndexPage({
           .findMany({ where: { userId: session.user.id }, select: { listingId: true } })
           .then((r) => new Set(r.map((x) => x.listingId)))
       : Promise.resolve(new Set<string>()),
+    prisma.listing.findMany({ where: categoryWhere, select: { size: true }, distinct: ["size"] }),
   ]);
+  const configuredSizes = getSizesForCategory(effectiveCat);
+  const listedSizes = new Set(sizeRows.map((row) => row.size).filter((size): size is string => !!size));
+  const availableSizes = configuredSizes.filter((size) => listedSizes.has(size));
 
   return (
     <div className="min-h-screen bg-cream text-ink py-10 pb-24">
@@ -77,7 +85,7 @@ export default async function ListingsIndexPage({
           </div>
         </div>
 
-        {effectiveCat && <SizeFilter categorySlug={effectiveCat} />}
+        {effectiveCat && <SizeFilter categorySlug={effectiveCat} availableSizes={availableSizes} />}
 
         {listings.length === 0 ? (
           <p className="font-bold text-gray-500 uppercase">No live auctions right now.</p>

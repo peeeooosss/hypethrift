@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { updateOrderStatus } from "@/actions/admin-actions";
 
-type OrderStatus = "PENDING_PAYMENT" | "PAID" | "SHIPPED" | "DELIVERED" | "CANCELLED" | "REFUNDED";
+type OrderStatus = "PENDING_CONTACT_FEE" | "WAITING_VERIFICATION" | "CONTACT_FEE_PAID" | "COMPLETED" | "CANCELLED" | "REJECTED";
 
 function money(n: number | null | undefined) {
   if (n == null) return "—";
@@ -9,23 +9,23 @@ function money(n: number | null | undefined) {
 }
 
 const ORDER_STATUS_LABELS: Record<string, string> = {
-  PENDING_PAYMENT: "Pending Payment",
-  PAID: "Paid",
-  SHIPPED: "Shipped",
-  DELIVERED: "Delivered",
+  PENDING_CONTACT_FEE: "Contact fee required",
+  WAITING_VERIFICATION: "Waiting for verification",
+  CONTACT_FEE_PAID: "Contact fee paid",
+  COMPLETED: "Completed",
   CANCELLED: "Cancelled",
-  REFUNDED: "Refunded",
+  REJECTED: "Rejected",
 };
 
-const STATUS_OPTIONS = ["PENDING_PAYMENT", "PAID", "SHIPPED", "DELIVERED", "CANCELLED", "REFUNDED"];
+const STATUS_OPTIONS = ["PENDING_CONTACT_FEE", "WAITING_VERIFICATION", "CONTACT_FEE_PAID", "COMPLETED", "CANCELLED", "REJECTED"];
 
 const STATUS_COLORS: Record<string, string> = {
-  PENDING_PAYMENT: "bg-bubblegum text-ink",
-  PAID: "bg-acid text-ink",
-  SHIPPED: "bg-blue-400 text-ink",
-  DELIVERED: "bg-green-400 text-ink",
+  PENDING_CONTACT_FEE: "bg-bubblegum text-ink",
+  WAITING_VERIFICATION: "bg-yellow-300 text-ink",
+  CONTACT_FEE_PAID: "bg-acid text-ink",
+  COMPLETED: "bg-green-400 text-ink",
   CANCELLED: "bg-gray-400 text-ink",
-  REFUNDED: "bg-pink-400 text-ink",
+  REJECTED: "bg-pink-400 text-ink",
 };
 
 type OrderWithDetails = {

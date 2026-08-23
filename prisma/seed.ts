@@ -44,16 +44,31 @@ async function main() {
 
   const seller = await prisma.user.upsert({
     where: { email: "seller@hypethrift.com" },
-    update: {},
+    update: { listingCredits: 10 },
     create: {
       email: "seller@hypethrift.com",
       password: await bcrypt.hash("seller123", 10),
       name: "Demo Seller",
       role: "SELLER",
       sellerStatus: "APPROVED",
+      listingCredits: 10,
     },
   });
   console.log("Seeded seller: seller@hypethrift.com / seller123");
+
+  await prisma.sellerProfile.upsert({
+    where: { userId: seller.id },
+    update: { whatsappNumber: "9864854481", acceptedAgreement: true, acceptedAt: new Date() },
+    create: {
+      userId: seller.id,
+      storeName: "Demo Archive",
+      storeDescription: "Demo seller profile for local testing.",
+      location: "India",
+      whatsappNumber: "9864854481",
+      acceptedAgreement: true,
+      acceptedAt: new Date(),
+    },
+  });
 
   for (const cat of CATEGORIES) {
     await prisma.category.upsert({

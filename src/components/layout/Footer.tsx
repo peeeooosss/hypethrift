@@ -9,7 +9,7 @@ export default function Footer() {
           <p className="text-sm text-gray-400 font-bold">Bid. Win. Flex. Repeat.</p>
         </div>
         <div className="flex flex-wrap gap-4 text-sm">
-          <Link href="/login?callbackUrl=/seller" className="font-black hover:text-acid transition-colors">
+          <Link href="/seller/login" className="font-black hover:text-acid transition-colors">
             Seller Login
           </Link>
           <span className="text-ink/30">|</span>

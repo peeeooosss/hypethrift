@@ -6,12 +6,12 @@ function money(n: number) {
 }
 
 const ORDER_STATUS_LABELS: Record<string, string> = {
-  PENDING_PAYMENT: "Pending Payment",
-  PAID: "Paid",
-  SHIPPED: "Shipped",
-  DELIVERED: "Delivered",
+  PENDING_CONTACT_FEE: "Contact fee required",
+  WAITING_VERIFICATION: "Waiting for verification",
+  CONTACT_FEE_PAID: "Contact fee paid",
+  COMPLETED: "Completed",
   CANCELLED: "Cancelled",
-  REFUNDED: "Refunded",
+  REJECTED: "Rejected",
 };
 
 const PAYOUT_STATUS_LABELS: Record<string, string> = {
@@ -28,12 +28,11 @@ export default async function AdminDashboardPage() {
     totalListings,
     totalOrders,
     totalCategories,
-    totalPayouts,
     pendingReviews,
     pendingSellers,
     revenueAgg,
     pendingRevenue,
-    payoutStats,
+    pendingContactFees,
     recentOrders,
   ] = await Promise.all([
     prisma.user.count(),
@@ -41,24 +40,21 @@ export default async function AdminDashboardPage() {
     prisma.listing.count(),
     prisma.order.count(),
     prisma.category.count(),
-    prisma.payout.count(),
     prisma.listing.count({ where: { status: "PENDING_REVIEW" } }),
     prisma.user.count({ where: { role: "SELLER", sellerStatus: "PENDING" } }),
     prisma.order.aggregate({
-      where: { status: "PAID" },
-      _sum: { finalPrice: true },
+      where: { status: { in: ["CONTACT_FEE_PAID", "COMPLETED"] } },
+      _sum: { platformFee: true },
     }),
     prisma.order.aggregate({
-      where: { status: "PENDING_PAYMENT" },
-      _sum: { finalPrice: true },
+      where: { status: { in: ["PENDING_CONTACT_FEE", "WAITING_VERIFICATION"] } },
+      _sum: { platformFee: true },
     }),
-    prisma.payout.groupBy({
-      by: ["status"],
-      _count: { _all: true },
-      where: { status: { in: ["PENDING", "PROCESSING"] } },
+    prisma.order.count({
+      where: { status: "WAITING_VERIFICATION" },
     }),
     prisma.order.findMany({
-      where: { status: "PAID" },
+      where: { status: { in: ["CONTACT_FEE_PAID", "COMPLETED"] } },
       orderBy: { createdAt: "desc" },
       take: 8,
       select: {
@@ -73,17 +69,16 @@ export default async function AdminDashboardPage() {
     }),
   ]);
 
-  const totalRevenue = revenueAgg._sum.finalPrice ?? 0;
-  const pendingRevenueTotal = pendingRevenue._sum.finalPrice ?? 0;
-  const pendingPayoutCount = payoutStats.reduce((sum, p) => sum + p._count._all, 0);
+  const totalRevenue = revenueAgg._sum?.platformFee ?? 0;
+  const pendingRevenueTotal = pendingRevenue._sum?.platformFee ?? 0;
 
   const cards = [
-    { label: "Total Revenue", value: money(totalRevenue), href: "/admin/orders?status=PAID", isCurrency: true },
+    { label: "Contact Fees", value: money(totalRevenue), href: "/admin/contact-fees", isCurrency: true },
     { label: "Total Orders", value: totalOrders.toString(), href: "/admin/orders" },
     { label: "Pending Review", value: pendingReviews.toString(), href: "/admin/listings" },
     { label: "Pending Seller Apps", value: pendingSellers.toString(), href: "/admin/sellers" },
     { label: "Active Listings", value: totalListings.toString(), href: "/admin/listings" },
-    { label: "Pending Payouts", value: pendingPayoutCount.toString(), href: "/admin/payouts" },
+    { label: "Fee Verifications", value: pendingContactFees.toString(), href: "/admin/contact-fees" },
     { label: "Total Users", value: totalUsers.toString(), href: "/admin/users" },
     { label: "Total Sellers", value: totalSellers.toString(), href: "/admin/sellers" },
     { label: "Total Categories", value: totalCategories.toString(), href: "/admin/categories" },
@@ -119,7 +114,7 @@ export default async function AdminDashboardPage() {
           </div>
           <div className="border-2 border-ink/20 rounded-xl p-4 text-center">
             <span className="text-xs uppercase font-black text-gray-500">Pending Payouts</span>
-            <p className="text-2xl font-black mt-1">{pendingPayoutCount} orders</p>
+            <p className="text-2xl font-black mt-1">{pendingContactFees} orders</p>
           </div>
         </div>
       </div>

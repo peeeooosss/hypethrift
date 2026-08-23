@@ -36,6 +36,12 @@ export async function approveSeller(formData: FormData) {
   const userId = formData.get("userId")?.toString();
   if (!userId) return;
 
+  const profile = await prisma.sellerProfile.findUnique({ where: { userId } });
+  if (!profile?.acceptedAgreement || !profile.storeName || !profile.whatsappNumber) {
+    revalidatePath("/admin/sellers");
+    return;
+  }
+
   await prisma.user.update({
     where: { id: userId },
     data: { role: "SELLER", sellerStatus: "APPROVED", sellerNote: null },
@@ -99,11 +105,32 @@ export async function approveListing(formData: FormData) {
   const listingId = formData.get("listingId")?.toString();
   if (!listingId) return;
 
-  await prisma.listing.update({
+  const listing = await prisma.listing.findUnique({
     where: { id: listingId },
-    data: { status: "ACTIVE", verified: true },
+    select: { sellerId: true, status: true },
   });
+  if (!listing || listing.status !== "PENDING_REVIEW") return;
+
+  const updated = await prisma.$transaction(async (tx) => {
+    const seller = await tx.user.updateMany({
+      where: { id: listing.sellerId, listingCredits: { gt: 0 } },
+      data: { listingCredits: { decrement: 1 } },
+    });
+    if (seller.count !== 1) return false;
+
+    await tx.listing.update({
+      where: { id: listingId },
+      data: { status: "ACTIVE", verified: true },
+    });
+    return true;
+  });
+
+  if (!updated) {
+    revalidatePath("/admin/listings");
+    return;
+  }
   revalidatePath("/admin/listings");
+  revalidatePath("/seller/listings");
 }
 
 export async function rejectListing(formData: FormData) {
@@ -208,7 +235,7 @@ export async function deleteSupportTicket(formData: FormData) {
 // ---------------------------------------------------------------------------
 // Orders
 // ---------------------------------------------------------------------------
-type OrderStatus = "PENDING_PAYMENT" | "PAID" | "SHIPPED" | "DELIVERED" | "CANCELLED" | "REFUNDED";
+type OrderStatus = "PENDING_CONTACT_FEE" | "WAITING_VERIFICATION" | "CONTACT_FEE_PAID" | "COMPLETED" | "REJECTED" | "CANCELLED";
 
 export async function updateOrderStatus(formData: FormData) {
   await requireAdminOrThrow();

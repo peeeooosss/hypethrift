@@ -7,6 +7,7 @@ import Link from "next/link";
 interface AuthFormProps {
   mode: "login" | "register";
   action: (prevState: { error?: string } | null, formData: FormData) => Promise<{ error?: string } | null>;
+  portal?: "customer" | "seller" | "admin";
 }
 
 function SubmitButton({ mode }: { mode: "login" | "register" }) {
@@ -22,7 +23,7 @@ function SubmitButton({ mode }: { mode: "login" | "register" }) {
   );
 }
 
-export default function AuthForm({ mode, action }: AuthFormProps) {
+export default function AuthForm({ mode, action, portal = "customer" }: AuthFormProps) {
   const [state, formAction] = useActionState(action, null);
   const isLogin = mode === "login";
 
@@ -33,9 +34,17 @@ export default function AuthForm({ mode, action }: AuthFormProps) {
           <Link href="/" className="text-2xl font-black uppercase tracking-tighter">
             HypeThrift
           </Link>
-          <h1 className="text-2xl font-black uppercase mt-4">{isLogin ? "Welcome Back" : "Join the Drop"}</h1>
+          <h1 className="text-2xl font-black uppercase mt-4">
+            {portal === "seller" ? "Seller Login" : portal === "admin" ? "Admin Login" : isLogin ? "Welcome Back" : "Join the Drop"}
+          </h1>
           <p className="text-sm text-gray-500 font-bold mt-1">
-            {isLogin ? "Sign in to your account" : "Create your customer account"}
+            {portal === "seller"
+              ? "Sign in to manage your thrift store"
+              : portal === "admin"
+              ? "Sign in to manage HypeThrift"
+              : isLogin
+              ? "Sign in to your account"
+              : "Create your customer account"}
           </p>
         </div>
 
@@ -99,6 +108,25 @@ export default function AuthForm({ mode, action }: AuthFormProps) {
             </>
           )}
         </p>
+
+        {isLogin && portal === "customer" && (
+          <div className="flex justify-center gap-4 mt-4 text-xs font-black uppercase">
+            <Link href="/seller/login" className="underline decoration-bubblegum decoration-2">
+              Seller Login
+            </Link>
+            <Link href="/admin/login" className="underline decoration-acid decoration-2">
+              Admin Login
+            </Link>
+          </div>
+        )}
+
+        {isLogin && portal !== "customer" && (
+          <p className="text-center text-xs font-black uppercase mt-4">
+            <Link href="/login" className="underline decoration-acid decoration-2">
+              Customer Login
+            </Link>
+          </p>
+        )}
       </div>
     </div>
   );

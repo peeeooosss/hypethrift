@@ -11,7 +11,11 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
-export async function loginAction(prevState: { error?: string } | null, formData: FormData) {
+async function loginForRole(
+  formData: FormData,
+  allowedRoles: Array<"CUSTOMER" | "SELLER" | "ADMIN">,
+  redirectTo: string,
+) {
   const parsed = loginSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
@@ -21,11 +25,24 @@ export async function loginAction(prevState: { error?: string } | null, formData
     return { error: parsed.error.issues[0]?.message ?? "Invalid credentials" };
   }
 
+  const user = await prisma.user.findUnique({
+    where: { email: parsed.data.email.toLowerCase() },
+    select: { role: true, sellerStatus: true, isBanned: true },
+  });
+
+  if (!user || user.isBanned || !allowedRoles.includes(user.role)) {
+    return { error: "Invalid email, password, or login portal" };
+  }
+
+  if (user.role === "SELLER" && user.sellerStatus !== "APPROVED") {
+    return { error: "Your seller account is not approved yet" };
+  }
+
   try {
     await signIn("credentials", {
       email: parsed.data.email.toLowerCase(),
       password: parsed.data.password,
-      redirectTo: "/account",
+      redirectTo,
     });
   } catch (error) {
     if (error instanceof AuthError) {
@@ -35,6 +52,22 @@ export async function loginAction(prevState: { error?: string } | null, formData
   }
 
   return null;
+}
+
+export async function loginAction(_prevState: { error?: string } | null, formData: FormData) {
+  const email = formData.get("email")?.toString().toLowerCase();
+  const user = email
+    ? await prisma.user.findUnique({ where: { email }, select: { role: true } })
+    : null;
+  return loginForRole(formData, ["CUSTOMER", "ADMIN"], user?.role === "ADMIN" ? "/admin" : "/account");
+}
+
+export async function sellerLoginAction(_prevState: { error?: string } | null, formData: FormData) {
+  return loginForRole(formData, ["SELLER"], "/seller");
+}
+
+export async function adminLoginAction(_prevState: { error?: string } | null, formData: FormData) {
+  return loginForRole(formData, ["ADMIN"], "/admin");
 }
 
 const registerSchema = z.object({

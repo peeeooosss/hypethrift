@@ -7,64 +7,48 @@ import { auth } from "@/lib/auth";
 
 export async function applyAsSeller(formData: FormData) {
   const session = await auth();
-  if (!session?.user) {
-    redirect("/login");
-  }
-
-  const note = formData.get("note")?.toString();
-
-  await prisma.user.update({
-    where: { id: session.user.id },
-    data: { sellerStatus: "PENDING", sellerNote: note ?? null },
-  });
-
-  revalidatePath("/apply-seller");
-}
-
-export async function requestPayout() {
-  const session = await auth();
   if (!session?.user) redirect("/login");
-  if (session.user.role !== "SELLER") redirect("/account");
-  if (session.user.isBanned) redirect("/login");
 
-  const userId = session.user.id;
+  const storeName = formData.get("storeName")?.toString().trim();
+  const storeDescription = formData.get("storeDescription")?.toString().trim() || null;
+  const location = formData.get("location")?.toString().trim() || null;
+  const whatsappNumber = formData.get("whatsappNumber")?.toString().trim();
+  const returnPolicy = formData.get("returnPolicy")?.toString().trim() || null;
+  const agreementAccepted = formData.get("agreementAccepted") === "on";
 
-  const orders = await prisma.order.findMany({
-    where: { sellerId: userId, status: "PAID" },
-    select: { finalPrice: true },
-  });
-
-  const totalPaid = orders.reduce((sum, o) => sum + o.finalPrice, 0);
-
-  const completedPayouts = await prisma.payout.findMany({
-    where: { sellerId: userId, status: "COMPLETED" },
-    select: { amount: true },
-  });
-  const totalPaidOut = completedPayouts.reduce((sum, p) => sum + p.amount, 0);
-
-  const pendingPayouts = await prisma.payout.findMany({
-    where: { sellerId: userId, status: "PENDING" },
-    select: { amount: true },
-  });
-  const pending = pendingPayouts.reduce((sum, p) => sum + p.amount, 0);
-
-  const available = totalPaid - totalPaidOut - pending;
-  const platformFee = Math.round(available * 0.1);
-  const payoutAmount = available - platformFee;
-
-  if (payoutAmount <= 0) {
-    return { error: "No earnings available to withdraw" };
+  if (!storeName || !whatsappNumber || !agreementAccepted) {
+    redirect("/apply-seller?error=complete-form");
   }
 
-  await prisma.payout.create({
-    data: {
-      sellerId: userId,
-      amount: payoutAmount,
-      method: "bank",
-      status: "PENDING",
+  await prisma.sellerProfile.upsert({
+    where: { userId: session.user.id },
+    create: {
+      userId: session.user.id,
+      storeName,
+      storeDescription,
+      location,
+      whatsappNumber,
+      returnPolicy,
+      acceptedAgreement: true,
+      acceptedAt: new Date(),
+    },
+    update: {
+      storeName,
+      storeDescription,
+      location,
+      whatsappNumber,
+      returnPolicy,
+      acceptedAgreement: true,
+      acceptedAt: new Date(),
     },
   });
 
-  revalidatePath("/seller/earnings");
-  return { success: true, amount: payoutAmount };
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: { sellerStatus: "PENDING", sellerNote: null },
+  });
+
+  revalidatePath("/apply-seller");
+  revalidatePath("/admin/sellers");
+  redirect("/apply-seller?submitted=1");
 }

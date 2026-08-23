@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { processEndedAuctions } from "@/actions/auction-actions";
+import { expireUnpaidOrders, processEndedAuctions } from "@/actions/auction-actions";
 
 export async function GET(request: NextRequest) {
   if (process.env.CRON_SECRET) {
@@ -10,8 +10,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const result = await processEndedAuctions();
-    return NextResponse.json(result);
+    const [auctions, unpaid] = await Promise.all([processEndedAuctions(), expireUnpaidOrders()]);
+    return NextResponse.json({ ...auctions, ...unpaid });
   } catch (error) {
     console.error("Failed to process ended auctions:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

@@ -6,7 +6,7 @@ export const revalidate = 0;
 export default async function HomePage() {
   return (
     <>
-      <LiveDropLandingPage liveCount={0} />
+      <LiveDropLandingPage />
       <LiveAuctionsStrip />
     </>
   );

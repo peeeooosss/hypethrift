@@ -27,6 +27,11 @@ export default async function AccountBidsPage() {
     orderBy: { createdAt: "desc" },
     include: { listing: { include: { category: true } } },
   });
+  const orders = await prisma.order.findMany({
+    where: { buyerId: session.user.id },
+    select: { id: true, listingId: true, status: true },
+  });
+  const orderByListing = new Map(orders.map((order) => [order.listingId, order]));
 
   const liveBids = bids.filter((b) => new Date(b.listing.endsAt) > new Date() && b.listing.status === "ACTIVE");
   const pastBids = bids.filter((b) => !(new Date(b.listing.endsAt) > new Date() && b.listing.status === "ACTIVE"));
@@ -40,25 +45,35 @@ export default async function AccountBidsPage() {
     else if (isEnded) status = "Ended (outbid)";
     else if (isHighest) status = "Winning";
     else status = "Outbid";
+    const order = isEnded && isHighest ? orderByListing.get(bid.listing.id) : undefined;
     return (
-      <Link key={bid.id} href={`/listing/${encodeURIComponent(bid.listing.id)}`} className="block">
-        <div className="bg-white border-2 border-ink shadow-brut-lg rounded-3xl p-4 hover:bg-ink/5 transition-colors">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl border-2 border-ink bg-gray-100 flex items-center justify-center text-xl">{bid.listing.category?.emoji ?? "📦"}</div>
-              <div>
-                <p className="font-black uppercase line-clamp-1">{bid.listing.title}</p>
-                <p className="text-xs text-gray-500 font-bold">
-                  Your bid: {money(bid.amount)} · current high: {money(current)}
-                </p>
-              </div>
+      <div key={bid.id} className="bg-white border-2 border-ink shadow-brut-lg rounded-3xl p-4 hover:bg-ink/5 transition-colors">
+        <div className="flex items-center justify-between gap-4">
+          <Link href={`/listing/${encodeURIComponent(bid.listing.id)}`} className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-xl border-2 border-ink bg-gray-100 flex items-center justify-center text-xl flex-shrink-0">{bid.listing.category?.emoji ?? "📦"}</div>
+            <div className="min-w-0">
+              <p className="font-black uppercase line-clamp-1">{bid.listing.title}</p>
+              <p className="text-xs text-gray-500 font-bold">
+                Your bid: {money(bid.amount)} · current high: {money(current)}
+              </p>
             </div>
-            <span className="text-xs font-black uppercase border border-ink px-2 py-1 rounded-full">
-              {status}
-            </span>
+          </Link>
+          <div className="flex flex-col items-end gap-2 flex-shrink-0">
+            <span className="text-xs font-black uppercase border border-ink px-2 py-1 rounded-full">{status}</span>
+            {status === "Won" && (!order || order.status === "PENDING_CONTACT_FEE" || order.status === "REJECTED") && (
+              <Link href={`/account/bids/${encodeURIComponent(bid.listing.id)}/contact`} className="bg-bubblegum border-2 border-ink px-3 py-1 rounded-full text-xs font-black uppercase hover:bg-acid">
+                Contact now
+              </Link>
+            )}
+            {status === "Won" && order?.status === "WAITING_VERIFICATION" && (
+              <Link href={`/account/orders/${order.id}`} className="text-xs font-black uppercase underline">Waiting for verification</Link>
+            )}
+            {status === "Won" && order?.status === "CONTACT_FEE_PAID" && (
+              <Link href={`/account/orders/${order.id}`} className="bg-acid border-2 border-ink px-3 py-1 rounded-full text-xs font-black uppercase">Order status</Link>
+            )}
           </div>
         </div>
-      </Link>
+      </div>
     );
   };
 
