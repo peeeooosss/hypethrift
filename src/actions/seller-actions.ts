@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { adminWhatsAppUrl } from "@/lib/platform";
 
 export async function applyAsSeller(formData: FormData) {
   const session = await auth();
@@ -50,5 +51,19 @@ export async function applyAsSeller(formData: FormData) {
 
   revalidatePath("/apply-seller");
   revalidatePath("/admin/sellers");
-  redirect("/apply-seller?submitted=1");
+
+  // Redirect to admin WhatsApp with seller details
+  const message = [
+    "New Seller Application Submitted",
+    `Store Name: ${storeName}`,
+    `Store Description: ${storeDescription || "N/A"}`,
+    `Location: ${location || "N/A"}`,
+    `WhatsApp: ${whatsappNumber}`,
+    `Return Policy: ${returnPolicy || "N/A"}`,
+    `Seller Email: ${session.user.email}`,
+    `Seller Name: ${session.user.name ?? "N/A"}`,
+    `User ID: ${session.user.id}`,
+  ].join("\n");
+
+  redirect(adminWhatsAppUrl(message));
 }

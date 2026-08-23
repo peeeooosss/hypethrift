@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -152,6 +153,33 @@ export default function LiveDropLandingPage() {
           </div>
         )}
       </section>
+
+      {/* Seller Onboarding Footer */}
+      <footer className="bg-ink text-white py-12 mt-20">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex flex-col md:flex-row items-center justify-center gap-6">
+            <div className="text-center md:text-left">
+              <p className="text-sm text-gray-400 font-bold mb-2">Want to sell your thrift?</p>
+              <Link
+                href="/apply-seller"
+                className="inline-block bg-bubblegum text-ink font-black uppercase px-6 py-3 rounded-full border-2 border-ink shadow-brut-md hover:bg-acid hover:text-ink transition-colors"
+              >
+                Sell with Us
+              </Link>
+            </div>
+            <div className="w-full md:w-auto border-t md:border-t-0 border-l md:border-l-0 border-ink/30 my-4 md:my-0 px-4 md:px-0" />
+            <div className="text-center md:text-left">
+              <p className="text-sm text-gray-400 font-bold mb-2">Already a seller?</p>
+              <Link
+                href="/seller/login"
+                className="inline-block bg-white text-ink font-black uppercase px-6 py-3 rounded-full border-2 border-white shadow-brut-md hover:bg-acid hover:text-ink transition-colors"
+              >
+                Seller Login
+              </Link>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

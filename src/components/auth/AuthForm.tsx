@@ -114,9 +114,6 @@ export default function AuthForm({ mode, action, portal = "customer" }: AuthForm
             <Link href="/seller/login" className="underline decoration-bubblegum decoration-2">
               Seller Login
             </Link>
-            <Link href="/admin/login" className="underline decoration-acid decoration-2">
-              Admin Login
-            </Link>
           </div>
         )}
 
