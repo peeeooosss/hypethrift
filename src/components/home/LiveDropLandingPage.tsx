@@ -3,8 +3,6 @@
 import { useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
 import CategoryBar from "@/components/ui/CategoryBar";
 import ProductCard from "@/components/drop/ProductCard";
 import BiddingCard from "@/components/drop/BiddingCard";
@@ -72,8 +70,6 @@ export default function LiveDropLandingPage({ liveCount }: { liveCount?: number 
           }}
         />
       </div>
-
-      <Navbar liveCount={liveCount ?? PRODUCTS.length} />
 
       <CategoryBar selected={selectedCategory} onSelect={handleCategorySelect} counts={categoryCounts} />
 
