@@ -8,13 +8,11 @@ import { CATEGORIES } from "@/data/categories";
 import { formatTimeFull, formatBid } from "@/utils/formatters";
 import type { Product } from "@/types";
 
-const SIZES = ["XS", "S", "M", "L", "XL"];
 const BID_INCREMENT = 50;
 
 export default function BiddingCard({ product }: { product: Product }) {
   const [time, setTime] = useState(product.time);
   const [liked, setLiked] = useState(false);
-  const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [bidPlaced, setBidPlaced] = useState(false);
   const [currentBid, setCurrentBid] = useState(product.bid);
@@ -25,7 +23,6 @@ export default function BiddingCard({ product }: { product: Product }) {
     setCurrentBid(product.bid);
     setViewers(product.viewers);
     setBidPlaced(false);
-    setSelectedSize(null);
   }, [product.id, product.time, product.bid, product.viewers]);
 
   useEffect(() => {
@@ -41,7 +38,6 @@ export default function BiddingCard({ product }: { product: Product }) {
   }, []);
 
   const handlePlaceBid = () => {
-    if (!selectedSize) return;
     setCurrentBid((prev) => prev + BID_INCREMENT);
     setShowConfetti(true);
     setBidPlaced(true);
@@ -147,35 +143,15 @@ export default function BiddingCard({ product }: { product: Product }) {
             </div>
           </div>
 
-          <div className="mb-6 pb-6 border-b-2 border-dashed border-ink">
-            <p className="text-xs uppercase font-bold text-gray-500 tracking-widest mb-3">Select Size</p>
-            <div className="grid grid-cols-5 gap-2">
-              {SIZES.map((size) => (
-                <motion.button
-                  key={size}
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setSelectedSize(size)}
-                  className={`py-3 rounded-lg border-2 font-black transition-all ${
-                    selectedSize === size ? "bg-ink text-white border-ink shadow-brut-bubblegum" : "bg-white text-ink border-ink shadow-brut-sm"
-                  }`}
-                >
-                  {size}
-                </motion.button>
-              ))}
-            </div>
-          </div>
-
           <motion.button
-            whileHover={selectedSize ? { x: 4, y: 4, boxShadow: "0px 0px 0px 0px #121212" } : {}}
-            whileTap={selectedSize ? { x: 8, y: 8, boxShadow: "0px 0px 0px 0px #121212" } : {}}
+            whileHover={bidPlaced ? { x: 4, y: 4, boxShadow: "0px 0px 0px 0px #121212" } : { x: 4, y: 4 }}
+            whileTap={bidPlaced ? { x: 8, y: 8, boxShadow: "0px 0px 0px 0px #121212" } : { x: 8, y: 8 }}
             onClick={handlePlaceBid}
-            disabled={!selectedSize}
             className={`w-full border-2 border-ink shadow-brut-lg font-black uppercase text-lg md:text-2xl py-4 rounded-2xl flex items-center justify-center gap-3 transition-all ${
-              selectedSize ? (bidPlaced ? "bg-acid text-ink" : "shine-btn text-ink cursor-pointer") : "bg-gray-200 text-gray-500 cursor-not-allowed opacity-60"
+              bidPlaced ? "bg-acid text-ink" : "bg-ink text-white cursor-pointer shine-btn"
             }`}
           >
-            {bidPlaced ? "✓ BID PLACED!" : selectedSize ? `PLACE BID · ₹${formatBid(nextBid)}` : "SELECT SIZE TO BID"}
+            {bidPlaced ? "✓ BID PLACED!" : `PLACE BID · ₹${formatBid(nextBid)}`}
             {!bidPlaced && <ArrowRightIcon />}
           </motion.button>
 
