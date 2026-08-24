@@ -11,7 +11,7 @@ export default async function ApplySellerPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const session = await auth();
-  if (!session?.user) redirect("/login");
+  if (!session?.user) redirect("/seller/register");
 
   const { error } = await searchParams;
 
@@ -20,6 +20,8 @@ export default async function ApplySellerPage({
     select: { sellerStatus: true, role: true },
   });
 
+  if (user?.role === "CUSTOMER") redirect("/seller/register");
+  if (user?.role === "ADMIN") redirect("/admin");
   if (user?.role === "SELLER" && user?.sellerStatus === "APPROVED") {
     redirect("/seller");
   }

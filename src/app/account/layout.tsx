@@ -11,11 +11,13 @@ const NAV = [
   { href: "/account/support", label: "Support" },
 ];
 
-const SELLER_LINK = { href: "/apply-seller", label: "Sell on HypeThrift" };
+const SELLER_LINK = { href: "/seller/register", label: "Create seller account" };
 
 export default async function AccountLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   if (!session?.user) redirect("/login");
+  if (session.user.role === "SELLER") redirect("/seller");
+  if (session.user.role === "ADMIN") redirect("/admin");
 
   return (
     <div className="min-h-screen bg-cream font-sans">

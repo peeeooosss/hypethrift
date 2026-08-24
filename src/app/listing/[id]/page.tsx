@@ -51,7 +51,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
   const endsMs = new Date(listing.endsAt).getTime();
   const isEnded = endsMs <= Date.now();
   const canBid =
-    !!session?.user && listing.status === "ACTIVE" && !isEnded && session.user.id !== listing.sellerId;
+    !!session?.user && session.user.role === "CUSTOMER" && listing.status === "ACTIVE" && !isEnded && session.user.id !== listing.sellerId;
 
   const winningBid = isEnded
     ? (await prisma.bid.findFirst({ where: { listingId: listing.id }, orderBy: [{ amount: "desc" }, { createdAt: "asc" }] })) ?? undefined
@@ -142,6 +142,10 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
             <BidForm listingId={listing.id} minimum={nextMin} />
           ) : isEnded ? (
             <p className="text-center text-gray-500 font-bold uppercase">Auction ended</p>
+          ) : session?.user?.role === "SELLER" ? (
+            <p className="text-center text-gray-500 font-bold uppercase">Buyer accounts only</p>
+          ) : session?.user?.role === "ADMIN" ? (
+            <p className="text-center text-gray-500 font-bold uppercase">Admins cannot bid</p>
           ) : session?.user?.id === listing.sellerId ? (
             <p className="text-center text-gray-500 font-bold uppercase">You own this item</p>
           ) : (

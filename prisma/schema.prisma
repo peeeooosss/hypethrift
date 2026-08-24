@@ -228,6 +228,9 @@ model Order {
   paidVia         String?
   contactFeeConfirmed Boolean @default(false)
   paymentDeadline DateTime?
+  itemPaymentDeadline DateTime?
+  sellerMarkedReadyAt DateTime?
+  buyerConfirmedAt DateTime?
   sellerOrderDetails Json?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt

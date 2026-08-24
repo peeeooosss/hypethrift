@@ -105,7 +105,7 @@ export default async function AccountProfilePage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {canApply && (
           <Link
-            href="/apply-seller"
+            href="/seller/register"
             className="bg-bubblegum border-2 border-ink shadow-brut-lg rounded-3xl p-5 text-center font-black uppercase hover:translate-y-[-2px] hover:shadow-brut-2xl transition-all"
           >
             🚀 Become a Seller
@@ -161,8 +161,8 @@ export default async function AccountProfilePage() {
                       <span className="text-xs font-black uppercase bg-acid border-2 border-ink px-2 py-1 rounded-full">
                         {statusLabel}
                       </span>
-                      {order.paymentDeadline && (
-                        <CountdownTimer deadline={order.paymentDeadline} compact />
+                      {(order.status === "CONTACT_FEE_PAID" ? order.itemPaymentDeadline : order.paymentDeadline) && (
+                        <CountdownTimer deadline={order.status === "CONTACT_FEE_PAID" ? order.itemPaymentDeadline : order.paymentDeadline} compact />
                       )}
                     </div>
                   </div>

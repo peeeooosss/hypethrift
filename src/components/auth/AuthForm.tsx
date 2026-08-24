@@ -95,15 +95,15 @@ export default function AuthForm({ mode, action, portal = "customer" }: AuthForm
           {isLogin ? (
             <>
               New here?{" "}
-              <Link href="/register" className="text-ink underline decoration-acid decoration-2">
-                Create account
+              <Link href={portal === "seller" ? "/seller/register" : "/register"} className="text-ink underline decoration-acid decoration-2">
+                {portal === "seller" ? "Create seller account" : "Create account"}
               </Link>
             </>
           ) : (
             <>
               Already a member?{" "}
-              <Link href="/login" className="text-ink underline decoration-acid decoration-2">
-                Sign in
+              <Link href={portal === "seller" ? "/seller/login" : "/login"} className="text-ink underline decoration-acid decoration-2">
+                {portal === "seller" ? "Seller sign in" : "Sign in"}
               </Link>
             </>
           )}

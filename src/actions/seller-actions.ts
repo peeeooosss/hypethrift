@@ -9,6 +9,7 @@ import { adminWhatsAppUrl } from "@/lib/platform";
 export async function applyAsSeller(formData: FormData) {
   const session = await auth();
   if (!session?.user) redirect("/login");
+  if (session.user.role !== "SELLER") redirect(session.user.role === "ADMIN" ? "/admin" : "/seller/register");
 
   const storeName = formData.get("storeName")?.toString().trim();
   const storeDescription = formData.get("storeDescription")?.toString().trim() || null;

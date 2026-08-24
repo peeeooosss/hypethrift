@@ -6,6 +6,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { slugify } from "@/lib/utils";
+import { ITEM_PAYMENT_WINDOW_HOURS } from "@/lib/platform";
 
 type UserRole = "CUSTOMER" | "SELLER" | "ADMIN";
 
@@ -36,6 +37,11 @@ export async function approveSeller(formData: FormData) {
   const userId = formData.get("userId")?.toString();
   if (!userId) return;
 
+  const applicant = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+  if (applicant?.role !== "SELLER") {
+    revalidatePath("/admin/sellers");
+    return;
+  }
   const profile = await prisma.sellerProfile.findUnique({ where: { userId } });
   if (!profile?.acceptedAgreement || !profile.storeName || !profile.whatsappNumber) {
     revalidatePath("/admin/sellers");
@@ -71,6 +77,11 @@ export async function changeUserRole(formData: FormData) {
   const userId = formData.get("userId")?.toString();
   const role = formData.get("role")?.toString();
   if (!userId || !role) return;
+
+  if (role === "SELLER") {
+    const target = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+    if (target?.role !== "SELLER") return;
+  }
 
   await prisma.user.update({
     where: { id: userId },
@@ -235,20 +246,26 @@ export async function deleteSupportTicket(formData: FormData) {
 // ---------------------------------------------------------------------------
 // Orders
 // ---------------------------------------------------------------------------
-type OrderStatus = "PENDING_CONTACT_FEE" | "WAITING_VERIFICATION" | "CONTACT_FEE_PAID" | "COMPLETED" | "REJECTED" | "CANCELLED";
+const orderStatusSchema = z.enum(["PENDING_CONTACT_FEE", "WAITING_VERIFICATION", "CONTACT_FEE_PAID", "COMPLETED", "REJECTED", "CANCELLED"]);
 
 export async function updateOrderStatus(formData: FormData) {
   await requireAdminOrThrow();
   const orderId = formData.get("orderId")?.toString();
-  const status = formData.get("status")?.toString();
-  if (!orderId || !status) return;
+  const parsedStatus = orderStatusSchema.safeParse(formData.get("status")?.toString());
+  if (!orderId || !parsedStatus.success) return;
 
   await prisma.order.update({
     where: { id: orderId },
-    data: { status: status as OrderStatus },
+    data: {
+      status: parsedStatus.data,
+      ...(parsedStatus.data === "CONTACT_FEE_PAID" ? {
+        contactFeeConfirmed: true,
+        itemPaymentDeadline: new Date(Date.now() + ITEM_PAYMENT_WINDOW_HOURS * 60 * 60 * 1000),
+      } : {}),
+    },
   });
   revalidatePath("/admin/orders");
-  revalidatePath("/admin/orders");
+  revalidatePath(`/account/orders/${orderId}`);
 }
 
 // ---------------------------------------------------------------------------

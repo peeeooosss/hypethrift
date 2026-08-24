@@ -78,7 +78,7 @@ export default async function AccountOrdersPage() {
                   >
                     View status →
                   </Link>
-                  {(o.status === "PENDING_CONTACT_FEE" || o.status === "REJECTED") && (
+                  {(o.status === "PENDING_CONTACT_FEE" || o.status === "REJECTED" || (o.status === "CONTACT_FEE_PAID" && !o.contactFeeConfirmed)) && (
                     <Link
                       href={`/account/orders/${o.id}`}
                       className="mt-1 inline-block text-xs font-black text-acid hover:underline"

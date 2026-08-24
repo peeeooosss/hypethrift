@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Confetti from "@/components/ui/Confetti";
+import { placeBid } from "@/actions/listing-actions";
 import { ArrowRightIcon, BadgeCheckIcon, HeartIcon, TrendingUpIcon, ShareIcon, StarIcon } from "@/components/ui/Icons";
 import { CATEGORIES } from "@/data/categories";
 import { formatTimeFull, formatBid } from "@/utils/formatters";
@@ -17,6 +18,7 @@ export default function BiddingCard({ product }: { product: Product }) {
   const [bidPlaced, setBidPlaced] = useState(false);
   const [currentBid, setCurrentBid] = useState(product.bid);
   const [viewers, setViewers] = useState(product.viewers);
+  const [state, action] = useActionState(placeBid, null);
 
   useEffect(() => {
     setTime(product.time);
@@ -37,13 +39,18 @@ export default function BiddingCard({ product }: { product: Product }) {
     return () => clearInterval(timer);
   }, []);
 
-  const handlePlaceBid = () => {
-    setCurrentBid((prev) => prev + BID_INCREMENT);
+  useEffect(() => {
+    if (!state?.success || typeof state.amount !== "number") return;
+    setCurrentBid(state.amount);
     setShowConfetti(true);
     setBidPlaced(true);
-    setTimeout(() => setShowConfetti(false), 3500);
-    setTimeout(() => setBidPlaced(false), 2000);
-  };
+    const confettiTimeout = setTimeout(() => setShowConfetti(false), 3500);
+    const successTimeout = setTimeout(() => setBidPlaced(false), 2000);
+    return () => {
+      clearTimeout(confettiTimeout);
+      clearTimeout(successTimeout);
+    };
+  }, [state]);
 
   const nextBid = currentBid + BID_INCREMENT;
   const category = CATEGORIES.find((c) => c.id === product.category);
@@ -103,7 +110,7 @@ export default function BiddingCard({ product }: { product: Product }) {
             </motion.div>
           )}
 
-          <motion.button
+            <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.85 }}
             onClick={() => setLiked(!liked)}
@@ -143,17 +150,23 @@ export default function BiddingCard({ product }: { product: Product }) {
             </div>
           </div>
 
-          <motion.button
+          <form action={action}>
+            <input type="hidden" name="listingId" value={product.listingId ?? ""} />
+            <input type="hidden" name="amount" value={nextBid} />
+            <motion.button
+            type="submit"
+            disabled={!product.listingId || bidPlaced}
             whileHover={bidPlaced ? { x: 4, y: 4, boxShadow: "0px 0px 0px 0px #121212" } : { x: 4, y: 4 }}
             whileTap={bidPlaced ? { x: 8, y: 8, boxShadow: "0px 0px 0px 0px #121212" } : { x: 8, y: 8 }}
-            onClick={handlePlaceBid}
             className={`w-full border-2 border-ink shadow-brut-lg font-black uppercase text-lg md:text-2xl py-4 rounded-2xl flex items-center justify-center gap-3 transition-all ${
-              bidPlaced ? "bg-acid text-ink" : "bg-ink text-white cursor-pointer shine-btn"
+              bidPlaced ? "bg-acid text-ink" : "bg-ink text-white cursor-pointer shine-btn disabled:opacity-60"
             }`}
           >
             {bidPlaced ? "✓ BID PLACED!" : `PLACE BID · ₹${formatBid(nextBid)}`}
             {!bidPlaced && <ArrowRightIcon />}
-          </motion.button>
+            </motion.button>
+          </form>
+          {state?.error && <p className="text-center text-red-600 text-sm font-bold mt-3">{state.error}</p>}
 
           <div className="flex gap-2 mt-3">
             <button className="flex-1 bg-white border-2 border-ink shadow-brut-sm py-2.5 rounded-xl font-bold uppercase text-xs flex items-center justify-center gap-2 hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_#121212] transition-all">

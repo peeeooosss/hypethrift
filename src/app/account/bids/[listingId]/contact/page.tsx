@@ -55,7 +55,7 @@ export default async function ContactWinnerPage({ params, searchParams }: {
   });
   const links = upiLinks(CONTACT_FEE, `HypeThrift contact fee ${order.id}`);
   const alreadySubmitted = order.status === "WAITING_VERIFICATION";
-  const approved = order.status === "CONTACT_FEE_PAID" || order.status === "COMPLETED";
+  const approved = order.contactFeeConfirmed && (order.status === "CONTACT_FEE_PAID" || order.status === "COMPLETED");
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">

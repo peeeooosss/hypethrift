@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { markOrderCompleted, reportBuyerNoPayment, updateSellerOrderDetails } from "@/actions/auction-actions";
 import { formatAddress } from "@/lib/platform";
+import CountdownTimer from "@/components/ui/CountdownTimer";
 
 export const revalidate = 0;
 
@@ -52,6 +53,7 @@ export default async function SellerOrdersPage() {
                       <p className="text-sm font-bold">{order.buyer.name ?? order.buyer.email}</p>
                       <p className="text-sm font-bold mt-1">Phone: {order.buyerPhone ?? "Not provided"}</p>
                       <p className="text-sm font-bold mt-1">Address: {formatAddress(order.shippingAddress)}</p>
+                      <p className="text-sm font-bold mt-1">Buyer confirmation: {order.buyerConfirmedAt ? "Received" : "Pending"}</p>
                     </div>
                     <div className="bg-ink/5 border-2 border-ink/20 rounded-2xl p-4">
                       <h2 className="font-black uppercase text-sm mb-3">Seller update</h2>
@@ -67,10 +69,14 @@ export default async function SellerOrdersPage() {
                   </div>
                 )}
 
-                {order.status === "CONTACT_FEE_PAID" && <div className="flex flex-wrap gap-2 mt-5">
-                  <form action={async (formData: FormData) => { await markOrderCompleted(formData); }}><input type="hidden" name="orderId" value={order.id} /><button className="bg-acid border-2 border-ink px-4 py-2 rounded-full text-xs font-black uppercase hover:bg-bubblegum">Mark order completed</button></form>
-                  <form action={async (formData: FormData) => { await reportBuyerNoPayment(formData); }}><input type="hidden" name="orderId" value={order.id} /><button className="border-2 border-bubblegum px-4 py-2 rounded-full text-xs font-black uppercase hover:bg-bubblegum">Buyer did not pay</button></form>
-                </div>}
+                 {order.status === "CONTACT_FEE_PAID" && <div className="mt-5 space-y-3">
+                   {order.itemPaymentDeadline && <div className="flex flex-wrap items-center justify-between gap-3 bg-bubblegum/20 border-2 border-bubblegum rounded-xl p-3"><span className="text-xs font-black uppercase">Item payment deadline</span><CountdownTimer deadline={order.itemPaymentDeadline} compact /></div>}
+                   {!order.sellerMarkedReadyAt && <p className="text-xs font-bold text-gray-500">Save the buyer payment confirmation above, then mark the handoff ready. The buyer can complete the order after confirming receipt.</p>}
+                   <div className="flex flex-wrap gap-2">
+                     <form action={async (formData: FormData) => { await markOrderCompleted(formData); }}><input type="hidden" name="orderId" value={order.id} /><button className="bg-acid border-2 border-ink px-4 py-2 rounded-full text-xs font-black uppercase hover:bg-bubblegum">{order.sellerMarkedReadyAt ? "Update handoff ready" : "Mark handoff ready"}</button></form>
+                     <form action={async (formData: FormData) => { await reportBuyerNoPayment(formData); }}><input type="hidden" name="orderId" value={order.id} /><button className="border-2 border-bubblegum px-4 py-2 rounded-full text-xs font-black uppercase hover:bg-bubblegum">Buyer did not pay</button></form>
+                   </div>
+                 </div>}
               </article>
             );
           })}

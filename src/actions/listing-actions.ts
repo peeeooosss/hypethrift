@@ -115,15 +115,18 @@ export async function deleteListing(formData: FormData) {
    revalidatePath("/seller/listings");
 }
 
-async function requireUser() {
+async function requireBuyer() {
   const session = await auth();
   if (!session?.user) redirect("/login");
   if (session.user.isBanned) redirect("/login");
+  if (session.user.role !== "CUSTOMER") {
+    redirect(session.user.role === "ADMIN" ? "/admin" : "/seller");
+  }
   return session.user.id;
 }
 
 export async function placeBid(prevState: { error?: string; success?: boolean } | null, formData: FormData) {
-  const userId = await requireUser();
+  const userId = await requireBuyer();
   const listingId = formData.get("listingId")?.toString();
   const amount = Number(formData.get("amount"));
 
@@ -138,7 +141,7 @@ export async function placeBid(prevState: { error?: string; success?: boolean } 
   if (new Date(listing.endsAt) <= new Date()) return { error: "This auction has ended" };
 
   const minimum = listing.currentBid ?? listing.startingBid;
-  if (amount <= minimum) return { error: `Bid must be greater than ₹${minimum}` };
+  if (!Number.isInteger(amount) || amount < minimum) return { error: `Bid must be at least ₹${minimum}` };
   if (listing.reservePrice && amount < listing.reservePrice) {
     return { error: `Bid must meet the reserve price of ₹${listing.reservePrice}` };
   }
@@ -155,5 +158,6 @@ export async function placeBid(prevState: { error?: string; success?: boolean } 
 
   revalidatePath(`/listing/${listingId}`);
   revalidatePath(`/listing/${listingId}/bids`);
+  revalidatePath("/");
   return { success: true, amount };
 }

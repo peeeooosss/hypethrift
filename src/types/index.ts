@@ -21,6 +21,7 @@ export interface Category {
 
 export interface Product {
   id: number;
+  listingId?: string;
   category: Exclude<CategoryId, "all">;
   name: string;
   emoji: string;

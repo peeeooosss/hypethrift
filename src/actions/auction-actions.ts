@@ -5,10 +5,10 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { adminWhatsAppUrl, CONTACT_FEE, formatAddress } from "@/lib/platform";
+import { adminWhatsAppUrl, CONTACT_FEE, formatAddress, ITEM_PAYMENT_WINDOW_HOURS } from "@/lib/platform";
 
 const orderDetailsSchema = z.object({
-  phone: z.string().min(7, "Enter a valid phone number"),
+  phone: z.string().regex(/^[0-9+() -]{7,20}$/, "Enter a valid phone number"),
   addressId: z.string().optional(),
   label: z.string().optional(),
   line1: z.string().optional(),
@@ -21,10 +21,63 @@ const orderDetailsSchema = z.object({
   agreement: z.literal("on"),
 });
 
+const buyerDetailsSchema = z.object({
+  phone: z.string().regex(/^[0-9+() -]{7,20}$/, "Enter a valid phone number"),
+  addressId: z.string().optional(),
+  label: z.string().optional(),
+  line1: z.string().optional(),
+  line2: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  pincode: z.string().optional(),
+  country: z.string().optional(),
+  agreement: z.literal("on"),
+});
+
+type AddressInput = {
+  addressId?: string;
+  label?: string;
+  line1?: string;
+  line2?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  country?: string;
+};
+
+async function resolveShippingAddress(userId: string, input: AddressInput) {
+  if (input.addressId) {
+    const address = await prisma.address.findFirst({ where: { id: input.addressId, userId } });
+    if (address) {
+      return {
+        label: address.label,
+        line1: address.line1,
+        line2: address.line2,
+        city: address.city,
+        state: address.state,
+        pincode: address.pincode,
+        country: address.country,
+      };
+    }
+  }
+
+  if (!input.line1 || !input.city || !input.state || !input.pincode) return null;
+  return {
+    label: input.label || "Checkout",
+    line1: input.line1,
+    line2: input.line2 || null,
+    city: input.city,
+    state: input.state,
+    pincode: input.pincode,
+    country: input.country || "India",
+  };
+}
+
 export async function requireUser() {
   const session = await auth();
   if (!session?.user) redirect("/login");
   if (session.user.isBanned) redirect("/login");
+  if (session.user.role !== "CUSTOMER") redirect(session.user.role === "ADMIN" ? "/admin" : "/seller");
   return session.user.id;
 }
 
@@ -154,36 +207,12 @@ export async function submitContactFee(formData: FormData) {
     await prisma.order.update({ where: { id: order.id }, data: { status: "CANCELLED" } });
     redirect("/login?error=payment-deadline");
   }
-  if (!["PENDING_CONTACT_FEE", "REJECTED"].includes(order.status)) redirect(`/account/orders/${order.id}`);
+  const canSubmit = ["PENDING_CONTACT_FEE", "REJECTED"].includes(order.status)
+    || (order.status === "CONTACT_FEE_PAID" && !order.contactFeeConfirmed);
+  if (!canSubmit) redirect(`/account/orders/${order.id}`);
 
-  let shippingAddress: Record<string, string | null> | null = null;
-  if (parsed.data.addressId) {
-    const address = await prisma.address.findFirst({ where: { id: parsed.data.addressId, userId } });
-    if (address) {
-      shippingAddress = {
-        label: address.label,
-        line1: address.line1,
-        line2: address.line2,
-        city: address.city,
-        state: address.state,
-        pincode: address.pincode,
-        country: address.country,
-      };
-    }
-  }
-  if (!shippingAddress) {
-    const required = [parsed.data.line1, parsed.data.city, parsed.data.state, parsed.data.pincode];
-    if (required.some((value) => !value)) redirect(`/account/bids/${order.listingId}/contact?error=address`);
-    shippingAddress = {
-      label: parsed.data.label || "Checkout",
-      line1: parsed.data.line1 || null,
-      line2: parsed.data.line2 || null,
-      city: parsed.data.city || null,
-      state: parsed.data.state || null,
-      pincode: parsed.data.pincode || null,
-      country: parsed.data.country || "India",
-    };
-  }
+  const shippingAddress = await resolveShippingAddress(userId, parsed.data);
+  if (!shippingAddress) redirect(`/account/bids/${order.listingId}/contact?error=address`);
 
   await prisma.order.update({
     where: { id: order.id },
@@ -219,12 +248,17 @@ export async function approveContactFee(formData: FormData) {
   if (!orderId) return;
   await prisma.order.updateMany({
     where: { id: orderId, status: "WAITING_VERIFICATION" },
-    data: { status: "CONTACT_FEE_PAID", contactFeeConfirmed: true },
+    data: {
+      status: "CONTACT_FEE_PAID",
+      contactFeeConfirmed: true,
+      itemPaymentDeadline: new Date(Date.now() + ITEM_PAYMENT_WINDOW_HOURS * 60 * 60 * 1000),
+    },
   });
   revalidatePath("/admin/contact-fees");
   revalidatePath("/admin/orders");
   revalidatePath("/account/bids");
   revalidatePath(`/account/orders/${orderId}`);
+  revalidatePath("/seller/orders");
 }
 
 export async function rejectContactFee(formData: FormData) {
@@ -235,13 +269,72 @@ export async function rejectContactFee(formData: FormData) {
   await prisma.order.updateMany({ where: { id: orderId, status: "WAITING_VERIFICATION" }, data: { status: "REJECTED", contactFeeConfirmed: false } });
   revalidatePath("/admin/contact-fees");
   revalidatePath("/account/bids");
+  revalidatePath("/seller/orders");
+}
+
+export async function updateBuyerOrderDetails(formData: FormData) {
+  const userId = await requireUser();
+  const orderId = formData.get("orderId")?.toString();
+  const parsed = buyerDetailsSchema.safeParse({
+    phone: formData.get("phone"),
+    addressId: formData.get("addressId")?.toString() || undefined,
+    label: formData.get("label")?.toString(),
+    line1: formData.get("line1")?.toString(),
+    line2: formData.get("line2")?.toString(),
+    city: formData.get("city")?.toString(),
+    state: formData.get("state")?.toString(),
+    pincode: formData.get("pincode")?.toString(),
+    country: formData.get("country")?.toString() || "India",
+    agreement: formData.get("agreement"),
+  });
+  if (!orderId || !parsed.success) redirect(`/account/orders/${orderId ?? ""}?error=details`);
+
+  const order = await prisma.order.findUnique({ where: { id: orderId, buyerId: userId } });
+  if (!order || !["WAITING_VERIFICATION", "CONTACT_FEE_PAID", "COMPLETED"].includes(order.status)) {
+    redirect(`/account/orders/${orderId ?? ""}?error=order`);
+  }
+
+  const shippingAddress = await resolveShippingAddress(userId, parsed.data);
+  if (!shippingAddress) redirect(`/account/orders/${order.id}?error=address`);
+
+  await prisma.order.update({
+    where: { id: order.id },
+    data: {
+      buyerPhone: parsed.data.phone,
+      shippingAddress,
+      buyerAgreementAccepted: true,
+    },
+  });
+  revalidatePath(`/account/orders/${order.id}`);
+  revalidatePath("/account/orders");
+  revalidatePath("/account/bids");
+  revalidatePath("/seller/orders");
+  redirect(`/account/orders/${order.id}`);
+}
+
+export async function confirmOrderReceived(formData: FormData) {
+  const userId = await requireUser();
+  const orderId = formData.get("orderId")?.toString();
+  if (!orderId) return { error: "Missing order" };
+
+  const order = await prisma.order.findUnique({ where: { id: orderId, buyerId: userId } });
+  if (!order || order.status !== "CONTACT_FEE_PAID") return { error: "Order is not ready to complete" };
+  if (!order.sellerMarkedReadyAt) return { error: "The seller must mark the order ready first" };
+
+  await prisma.order.update({
+    where: { id: order.id },
+    data: { buyerConfirmedAt: new Date(), status: "COMPLETED" },
+  });
+  revalidatePath(`/account/orders/${order.id}`);
+  revalidatePath("/account/orders");
+  revalidatePath("/account/bids");
 }
 
 async function sellerOrder(orderId: string) {
   const session = await auth();
   if (!session?.user) redirect("/login");
   if (session.user.role !== "SELLER" && session.user.role !== "ADMIN") redirect("/account");
-  const order = await prisma.order.findUnique({ where: { id: orderId }, select: { sellerId: true, status: true, sellerOrderDetails: true, buyerId: true } });
+  const order = await prisma.order.findUnique({ where: { id: orderId }, select: { sellerId: true, status: true, sellerOrderDetails: true, buyerId: true, buyerConfirmedAt: true } });
   if (!order || order.sellerId !== session.user.id) return null;
   return { order, userId: session.user.id };
 }
@@ -251,6 +344,7 @@ export async function updateSellerOrderDetails(formData: FormData) {
   if (!orderId) return;
   const result = await sellerOrder(orderId);
   if (!result) return { error: "Unauthorized" };
+  if (!(["CONTACT_FEE_PAID", "COMPLETED"] as string[]).includes(result.order.status)) return { error: "Buyer contact fee is not verified" };
   const current = result.order.sellerOrderDetails && typeof result.order.sellerOrderDetails === "object" ? result.order.sellerOrderDetails as Record<string, unknown> : {};
   await prisma.order.update({
     where: { id: orderId },
@@ -266,6 +360,7 @@ export async function updateSellerOrderDetails(formData: FormData) {
   });
   revalidatePath("/seller/orders");
   revalidatePath(`/account/orders/${orderId}`);
+  revalidatePath("/account/orders");
 }
 
 export async function markOrderCompleted(formData: FormData) {
@@ -274,9 +369,18 @@ export async function markOrderCompleted(formData: FormData) {
   const result = await sellerOrder(orderId);
   if (!result || result.order.status !== "CONTACT_FEE_PAID") return { error: "Order is not ready to complete" };
   const current = result.order.sellerOrderDetails && typeof result.order.sellerOrderDetails === "object" ? result.order.sellerOrderDetails as Record<string, unknown> : {};
-  await prisma.order.update({ where: { id: orderId }, data: { status: "COMPLETED", sellerOrderDetails: { ...current, completedAt: new Date().toISOString() } } });
+  if (current.sellerPaymentReceived !== true) return { error: "Confirm that the buyer paid for the item first" };
+  await prisma.order.update({
+    where: { id: orderId },
+    data: {
+      status: result.order.buyerConfirmedAt ? "COMPLETED" : "CONTACT_FEE_PAID",
+      sellerMarkedReadyAt: new Date(),
+      sellerOrderDetails: { ...current, sellerMarkedReadyAt: new Date().toISOString() },
+    },
+  });
   revalidatePath("/seller/orders");
   revalidatePath(`/account/orders/${orderId}`);
+  revalidatePath("/account/orders");
 }
 
 export async function reportBuyerNoPayment(formData: FormData) {
@@ -284,9 +388,9 @@ export async function reportBuyerNoPayment(formData: FormData) {
   if (!orderId) return;
   const result = await sellerOrder(orderId);
   if (!result) return { error: "Unauthorized" };
-  const order = await prisma.order.findUnique({ where: { id: orderId }, select: { buyerId: true, paymentDeadline: true, status: true } });
+  const order = await prisma.order.findUnique({ where: { id: orderId }, select: { buyerId: true, itemPaymentDeadline: true, status: true } });
   if (!order || order.status !== "CONTACT_FEE_PAID") return { error: "Order is not ready for this action" };
-  if (!order.paymentDeadline || order.paymentDeadline > new Date()) return { error: "The buyer still has time to complete payment" };
+  if (!order.itemPaymentDeadline || order.itemPaymentDeadline > new Date()) return { error: "The buyer still has time to complete payment" };
   await prisma.$transaction([
     prisma.user.update({ where: { id: order.buyerId }, data: { isBanned: true } }),
     prisma.order.update({ where: { id: orderId }, data: { status: "CANCELLED" } }),

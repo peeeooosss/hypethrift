@@ -1,6 +1,7 @@
 import { PrismaClient } from "./generated/client/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcryptjs";
+import { ITEM_PAYMENT_WINDOW_HOURS } from "../src/lib/platform";
 
 const connectionString = process.env.DATABASE_URL!;
 const prisma = new PrismaClient({
@@ -19,159 +20,299 @@ const CATEGORIES = [
   { name: "Outerwear", slug: "outerwear", emoji: "🧥", color: "#33CCFF", textColor: "#121212" },
 ];
 
-const DEMO_LISTINGS = [
-  { title: "Jordan 1 Chicago (2015)", slug: "sneakers", emoji: "👟", bg: "#FF66B2", startingBid: 18500, bids: 42, viewers: 128, hot: true, verified: true, condition: "EXCELLENT", status: "ACTIVE", size: "UK 9.5" },
-  { title: "Yeezy 350 Zebra", slug: "sneakers", emoji: "👟", bg: "#33CCFF", startingBid: 12400, bids: 28, viewers: 89, hot: false, verified: true, condition: "GOOD", status: "ACTIVE", size: "UK 8.5" },
-  { title: "Dunk Low Panda", slug: "sneakers", emoji: "👟", bg: "#D4FF33", startingBid: 8200, bids: 56, viewers: 210, hot: true, verified: false, condition: "EXCELLENT", status: "ACTIVE", size: "UK 9" },
-  { title: "Supreme Box Logo Tee", slug: "streetwear", emoji: "👕", bg: "#FF66B2", startingBid: 5600, bids: 34, viewers: 156, hot: true, verified: true, condition: "LIKE_NEW", status: "ACTIVE", size: "L" },
-  { title: "Vintage Fendi Baguette", slug: "bags", emoji: "👜", bg: "#D4FF33", startingBid: 12800, bids: 52, viewers: 234, hot: true, verified: true, condition: "GOOD", status: "PENDING_REVIEW", size: "One Size" },
-  { title: "Chrome Hearts Ring", slug: "jewelry", emoji: "💍", bg: "#33CCFF", startingBid: 7500, bids: 31, viewers: 112, hot: false, verified: true, condition: "NEW", status: "PENDING_REVIEW", size: "One Size" },
-  { title: "North Face Nuptse 1996", slug: "outerwear", emoji: "🧥", bg: "#33CCFF", startingBid: 8900, bids: 47, viewers: 201, hot: true, verified: true, condition: "EXCELLENT", status: "ACTIVE", size: "XL" },
+const SELLERS = [
+  {
+    key: "archive",
+    email: "seller@hypethrift.com",
+    password: "seller123",
+    name: "Demo Seller",
+    storeName: "Demo Archive",
+    storeDescription: "Curated sneakers and streetwear for demo testing.",
+    location: "Mumbai, India",
+    whatsappNumber: "9864854481",
+  },
+  {
+    key: "streetvault",
+    email: "streetvault@hypethrift.com",
+    password: "vault123",
+    name: "Aarav Mehta",
+    storeName: "Street Vault",
+    storeDescription: "Rare streetwear finds and everyday grails.",
+    location: "Delhi, India",
+    whatsappNumber: "9864854482",
+  },
+  {
+    key: "closet",
+    email: "vintagecloset@hypethrift.com",
+    password: "closet123",
+    name: "Mira Kapoor",
+    storeName: "Mira's Vintage Closet",
+    storeDescription: "Vintage bags, denim, and one-of-one archive pieces.",
+    location: "Bengaluru, India",
+    whatsappNumber: "9864854483",
+  },
 ];
 
-async function main() {
-  await prisma.user.upsert({
-    where: { email: "admin@hypethrift.com" },
-    update: {},
+const BUYERS = [
+  { key: "alex", email: "buyer@hypethrift.com", password: "buyer123", name: "Demo Buyer" },
+  { key: "riya", email: "riya.buyer@hypethrift.com", password: "riya123", name: "Riya Sharma" },
+  { key: "kabir", email: "kabir.buyer@hypethrift.com", password: "kabir123", name: "Kabir Singh" },
+];
+
+const LIVE_LISTINGS = [
+  { id: "seed-Jordan 1 Chicago (2015)", title: "Jordan 1 Chicago (2015)", sellerKey: "archive", categorySlug: "sneakers", startingBid: 18500, currentBid: 19600, condition: "EXCELLENT", size: "UK 9.5", verified: true, hot: true, bidCount: 42, views: 128, watchers: 18 },
+  { id: "seed-Yeezy 350 Zebra", title: "Yeezy 350 Zebra", sellerKey: "archive", categorySlug: "sneakers", startingBid: 12400, currentBid: 13800, condition: "GOOD", size: "UK 8.5", verified: true, hot: false, bidCount: 28, views: 89, watchers: 11 },
+  { id: "seed-Dunk Low Panda", title: "Dunk Low Panda", sellerKey: "streetvault", categorySlug: "sneakers", startingBid: 8200, currentBid: 9700, condition: "EXCELLENT", size: "UK 9", verified: false, hot: true, bidCount: 56, views: 210, watchers: 26 },
+  { id: "seed-Supreme Box Logo Tee", title: "Supreme Box Logo Tee", sellerKey: "streetvault", categorySlug: "streetwear", startingBid: 5600, currentBid: 7100, condition: "LIKE_NEW", size: "L", verified: true, hot: true, bidCount: 34, views: 156, watchers: 20 },
+  { id: "seed-North Face Nuptse 1996", title: "North Face Nuptse 1996", sellerKey: "closet", categorySlug: "outerwear", startingBid: 8900, currentBid: 10500, condition: "EXCELLENT", size: "XL", verified: true, hot: true, bidCount: 47, views: 201, watchers: 24 },
+  { id: "seed-Vintage Coach Shoulder Bag", title: "Vintage Coach Shoulder Bag", sellerKey: "closet", categorySlug: "bags", startingBid: 6400, currentBid: 7800, condition: "GOOD", size: "One Size", verified: true, hot: false, bidCount: 19, views: 74, watchers: 8 },
+];
+
+const REVIEW_LISTINGS = [
+  { id: "seed-Vintage Fendi Baguette", title: "Vintage Fendi Baguette", sellerKey: "archive", categorySlug: "bags", startingBid: 12800, currentBid: 12800, condition: "GOOD", size: "One Size", verified: true, hot: true, bidCount: 0, views: 234, watchers: 0 },
+  { id: "seed-Chrome Hearts Ring", title: "Chrome Hearts Ring", sellerKey: "streetvault", categorySlug: "jewelry", startingBid: 7500, currentBid: 7500, condition: "NEW", size: "One Size", verified: true, hot: false, bidCount: 0, views: 112, watchers: 0 },
+];
+
+const PAST_LISTINGS = [
+  { id: "seed-past-Levi's 501 Big E", title: "Levi's 501 Big E", sellerKey: "closet", categorySlug: "denim", startingBid: 4800, currentBid: 6100, condition: "GOOD", size: "W32 L32", status: "ENDED" },
+  { id: "seed-past-Louis Vuitton Pochette", title: "Louis Vuitton Pochette", sellerKey: "closet", categorySlug: "bags", startingBid: 12500, currentBid: 15800, condition: "EXCELLENT", size: "One Size", status: "SOLD" },
+  { id: "seed-past-Varsity Jacket", title: "90s Varsity Jacket", sellerKey: "streetvault", categorySlug: "outerwear", startingBid: 5200, currentBid: 6800, condition: "GOOD", size: "M", status: "SOLD" },
+];
+
+type DemoBid = readonly [id: string, listingId: string, buyerKey: string, amount: number];
+
+const LIVE_BIDS: DemoBid[] = [
+  ["seed-live-jordan-alex", "seed-Jordan 1 Chicago (2015)", "alex", 19000],
+  ["seed-live-jordan-riya", "seed-Jordan 1 Chicago (2015)", "riya", 19600],
+  ["seed-live-yeezy-alex", "seed-Yeezy 350 Zebra", "alex", 13800],
+  ["seed-live-yeezy-kabir", "seed-Yeezy 350 Zebra", "kabir", 13200],
+  ["seed-live-dunk-riya", "seed-Dunk Low Panda", "riya", 9200],
+  ["seed-live-dunk-kabir", "seed-Dunk Low Panda", "kabir", 9700],
+  ["seed-live-supreme-alex", "seed-Supreme Box Logo Tee", "alex", 6800],
+  ["seed-live-supreme-kabir", "seed-Supreme Box Logo Tee", "kabir", 7100],
+  ["seed-live-nuptse-alex", "seed-North Face Nuptse 1996", "alex", 10500],
+  ["seed-live-bag-riya", "seed-Vintage Coach Shoulder Bag", "riya", 7800],
+];
+
+const PAST_BIDS: DemoBid[] = [
+  ["seed-past-bid-levi-alex", "seed-past-Levi's 501 Big E", "alex", 5600],
+  ["seed-past-bid-levi-kabir", "seed-past-Levi's 501 Big E", "kabir", 6100],
+  ["seed-past-bid-lv-riya", "seed-past-Louis Vuitton Pochette", "riya", 14800],
+  ["seed-past-bid-lv-kabir", "seed-past-Louis Vuitton Pochette", "kabir", 15800],
+  ["seed-past-bid-varsity-alex", "seed-past-Varsity Jacket", "alex", 6800],
+  ["seed-past-bid-varsity-riya", "seed-past-Varsity Jacket", "riya", 6200],
+];
+
+async function upsertUser(data: { email: string; password: string; name: string; role: string; sellerStatus?: string; listingCredits?: number }) {
+  return prisma.user.upsert({
+    where: { email: data.email },
+    update: {
+      name: data.name,
+      password: await bcrypt.hash(data.password, 10),
+      role: data.role as any,
+      sellerStatus: data.sellerStatus as any,
+      listingCredits: data.listingCredits,
+      isBanned: false,
+    },
     create: {
-      email: "admin@hypethrift.com",
-      password: await bcrypt.hash("admin123", 10),
-      name: "Platform Admin",
-      role: "ADMIN",
+      email: data.email,
+      password: await bcrypt.hash(data.password, 10),
+      name: data.name,
+      role: data.role as any,
+      sellerStatus: data.sellerStatus as any,
+      listingCredits: data.listingCredits ?? 0,
     },
   });
+}
+
+async function upsertListing(
+  listing: {
+    id: string;
+    title: string;
+    sellerKey: string;
+    categorySlug: string;
+    startingBid: number;
+    currentBid: number;
+    condition: string;
+    size: string;
+    verified?: boolean;
+    hot?: boolean;
+    bidCount?: number;
+    views?: number;
+    watchers?: number;
+    status?: string;
+  },
+  sellers: Record<string, { id: string }>,
+  endsAt: Date,
+) {
+  return prisma.listing.upsert({
+    where: { id: listing.id },
+    update: {
+      title: listing.title,
+      seller: { connect: { id: sellers[listing.sellerKey].id } },
+      category: { connect: { slug: listing.categorySlug } },
+      startingBid: listing.startingBid,
+      currentBid: listing.currentBid,
+      status: (listing.status ?? "ACTIVE") as any,
+      condition: listing.condition as any,
+      size: listing.size,
+      verified: listing.verified ?? false,
+      hot: listing.hot ?? false,
+      bidCount: listing.bidCount ?? 0,
+      views: listing.views ?? 0,
+      watchers: listing.watchers ?? 0,
+      endsAt,
+    },
+    create: {
+      id: listing.id,
+      title: listing.title,
+      description: "Premium vintage piece, fully authenticated for demo purposes.",
+      category: { connect: { slug: listing.categorySlug } },
+      seller: { connect: { id: sellers[listing.sellerKey].id } },
+      images: [],
+      startingBid: listing.startingBid,
+      currentBid: listing.currentBid,
+      bidIncrement: 50,
+      status: (listing.status ?? "ACTIVE") as any,
+      verified: listing.verified ?? false,
+      hot: listing.hot ?? false,
+      condition: listing.condition as any,
+      size: listing.size,
+      bidCount: listing.bidCount ?? 0,
+      views: listing.views ?? 0,
+      watchers: listing.watchers ?? 0,
+      endsAt,
+    },
+  });
+}
+
+async function upsertBid(id: string, listingId: string, bidderId: string, amount: number) {
+  return prisma.bid.upsert({
+    where: { id },
+    update: { listingId, bidderId, amount },
+    create: { id, listingId, bidderId, amount },
+  });
+}
+
+async function main() {
+  await upsertUser({ email: "admin@hypethrift.com", password: "admin123", name: "Platform Admin", role: "ADMIN" });
   console.log("Seeded admin: admin@hypethrift.com / admin123");
 
-  const seller = await prisma.user.upsert({
-    where: { email: "seller@hypethrift.com" },
-    update: { listingCredits: 10 },
-    create: {
-      email: "seller@hypethrift.com",
-      password: await bcrypt.hash("seller123", 10),
-      name: "Demo Seller",
+  const sellers: Record<string, { id: string }> = {};
+  for (const sellerData of SELLERS) {
+    const seller = await upsertUser({
+      ...sellerData,
       role: "SELLER",
       sellerStatus: "APPROVED",
       listingCredits: 10,
-    },
-  });
-  console.log("Seeded seller: seller@hypethrift.com / seller123");
-
-  await prisma.sellerProfile.upsert({
-    where: { userId: seller.id },
-    update: { whatsappNumber: "9864854481", acceptedAgreement: true, acceptedAt: new Date() },
-    create: {
-      userId: seller.id,
-      storeName: "Demo Archive",
-      storeDescription: "Demo seller profile for local testing.",
-      location: "India",
-      whatsappNumber: "9864854481",
-      acceptedAgreement: true,
-      acceptedAt: new Date(),
-    },
-  });
-
-  for (const cat of CATEGORIES) {
-    await prisma.category.upsert({
-      where: { slug: cat.slug },
-      update: {},
-      create: cat,
     });
-  }
-  console.log(`Seeded ${CATEGORIES.length} categories`);
-
-  const endsAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-  for (const l of DEMO_LISTINGS) {
-    await prisma.listing.upsert({
-      where: { id: `seed-${l.title}` },
-      update: { currentBid: l.startingBid, status: l.status as any, size: l.size as any, endsAt },
+    sellers[sellerData.key] = seller;
+    await prisma.sellerProfile.upsert({
+      where: { userId: seller.id },
+      update: {
+        storeName: sellerData.storeName,
+        storeDescription: sellerData.storeDescription,
+        location: sellerData.location,
+        whatsappNumber: sellerData.whatsappNumber,
+        acceptedAgreement: true,
+        acceptedAt: new Date(),
+      },
       create: {
-        id: `seed-${l.title}`,
-        title: l.title,
-        description: "Premium vintage piece, fully authenticated.",
-        category: { connect: { slug: l.slug } },
-        seller: { connect: { id: seller.id } },
-        images: [],
-        startingBid: l.startingBid,
-        currentBid: l.startingBid,
-        bidIncrement: 50,
-        status: l.status as any,
-        verified: l.verified,
-        hot: l.hot,
-         condition: l.condition as any,
-         size: l.size as any,
-         endsAt,
+        userId: seller.id,
+        storeName: sellerData.storeName,
+        storeDescription: sellerData.storeDescription,
+        location: sellerData.location,
+        whatsappNumber: sellerData.whatsappNumber,
+        acceptedAgreement: true,
+        acceptedAt: new Date(),
       },
     });
+    console.log(`Seeded seller: ${sellerData.email} / ${sellerData.password}`);
   }
-  console.log(`Seeded ${DEMO_LISTINGS.length} demo listings`);
 
-  // Create demo buyer user for past bids
-  const buyer = await prisma.user.upsert({
-    where: { email: "buyer@hypethrift.com" },
-    update: {},
+  const buyers: Record<string, { id: string }> = {};
+  for (const buyerData of BUYERS) {
+    const buyer = await upsertUser({ ...buyerData, role: "CUSTOMER" });
+    buyers[buyerData.key] = buyer;
+    console.log(`Seeded buyer: ${buyerData.email} / ${buyerData.password}`);
+  }
+
+  for (const category of CATEGORIES) {
+    await prisma.category.upsert({
+      where: { slug: category.slug },
+      update: { name: category.name, emoji: category.emoji, color: category.color, textColor: category.textColor },
+      create: category,
+    });
+  }
+
+  const liveEndsAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const pastEndsAt = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+  for (const listing of LIVE_LISTINGS) await upsertListing(listing, sellers, liveEndsAt);
+  for (const listing of REVIEW_LISTINGS) await upsertListing({ ...listing, status: "PENDING_REVIEW" }, sellers, liveEndsAt);
+  for (const listing of PAST_LISTINGS) await upsertListing(listing, sellers, pastEndsAt);
+  console.log(`Seeded ${LIVE_LISTINGS.length} live listings, ${REVIEW_LISTINGS.length} review listings, and ${PAST_LISTINGS.length} past listings`);
+
+  for (const [id, listingId, buyerKey, amount] of LIVE_BIDS) {
+    await upsertBid(id, listingId, buyers[buyerKey].id, amount);
+  }
+  for (const [id, listingId, buyerKey, amount] of PAST_BIDS) {
+    await upsertBid(id, listingId, buyers[buyerKey].id, amount);
+  }
+
+  const alex = buyers.alex;
+  const riya = buyers.riya;
+  const kabir = buyers.kabir;
+  await prisma.order.upsert({
+    where: { listingId: "seed-past-Levi's 501 Big E" },
+    update: { buyerId: kabir.id, sellerId: sellers.closet.id, finalPrice: 6100, status: "PENDING_CONTACT_FEE", paymentDeadline: new Date(Date.now() + 24 * 60 * 60 * 1000) },
+    create: { listingId: "seed-past-Levi's 501 Big E", buyerId: kabir.id, sellerId: sellers.closet.id, finalPrice: 6100, platformFee: 69, status: "PENDING_CONTACT_FEE", paymentDeadline: new Date(Date.now() + 24 * 60 * 60 * 1000) },
+  });
+  await prisma.order.upsert({
+    where: { listingId: "seed-past-Louis Vuitton Pochette" },
+    update: { buyerId: kabir.id, sellerId: sellers.closet.id, finalPrice: 15800, status: "COMPLETED", paymentDeadline: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) },
+    create: { listingId: "seed-past-Louis Vuitton Pochette", buyerId: kabir.id, sellerId: sellers.closet.id, finalPrice: 15800, platformFee: 69, status: "COMPLETED", paymentDeadline: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) },
+  });
+  await prisma.order.upsert({
+    where: { listingId: "seed-past-Varsity Jacket" },
+    update: {
+      buyerId: alex.id,
+      sellerId: sellers.streetvault.id,
+      finalPrice: 6800,
+      status: "CONTACT_FEE_PAID",
+      paymentDeadline: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      itemPaymentDeadline: new Date(Date.now() + ITEM_PAYMENT_WINDOW_HOURS * 60 * 60 * 1000),
+      buyerAgreementAccepted: true,
+      contactFeeConfirmed: true,
+      buyerPhone: "9876543210",
+      paidVia: "Google Pay",
+      shippingAddress: { label: "Home", line1: "123 Demo Street", city: "Mumbai", state: "Maharashtra", pincode: "400001", country: "India" },
+      sellerOrderDetails: {},
+      sellerMarkedReadyAt: null,
+      buyerConfirmedAt: null,
+    },
     create: {
-      email: "buyer@hypethrift.com",
-      password: await bcrypt.hash("buyer123", 10),
-      name: "Demo Buyer",
-      role: "CUSTOMER",
+      listingId: "seed-past-Varsity Jacket",
+      buyerId: alex.id,
+      sellerId: sellers.streetvault.id,
+      finalPrice: 6800,
+      platformFee: 69,
+      status: "CONTACT_FEE_PAID",
+      paymentDeadline: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      itemPaymentDeadline: new Date(Date.now() + ITEM_PAYMENT_WINDOW_HOURS * 60 * 60 * 1000),
+      buyerAgreementAccepted: true,
+      contactFeeConfirmed: true,
+      buyerPhone: "9876543210",
+      paidVia: "Google Pay",
+      shippingAddress: { label: "Home", line1: "123 Demo Street", city: "Mumbai", state: "Maharashtra", pincode: "400001", country: "India" },
     },
   });
-  console.log("Seeded buyer: buyer@hypethrift.com / buyer123");
 
-  // Create some past bids (won and lost) for the demo buyer
-  const pastListings = await prisma.listing.findMany({
-    where: { status: { in: ["SOLD", "ENDED"] } },
-    take: 5,
-  });
-
-  for (const listing of pastListings) {
-    // Create a winning bid for the demo buyer
-    const winningBid = await prisma.bid.create({
-      data: {
-        amount: (listing.currentBid ?? listing.startingBid) + 500,
-        listingId: listing.id,
-        bidderId: buyer.id,
-      },
-    });
-
-    // Create order for won bids
-    if (listing.status === "SOLD") {
-      await prisma.order.create({
-        data: {
-          listingId: listing.id,
-          buyerId: buyer.id,
-          sellerId: listing.sellerId,
-          finalPrice: winningBid.amount,
-          platformFee: 69,
-          status: "COMPLETED",
-          paymentDeadline: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        },
-      });
-    }
-  }
-
-  // Create some lost bids for other listings
-  const activeListings = await prisma.listing.findMany({
-    where: { status: "ACTIVE" },
-    take: 3,
-  });
-
-  for (const listing of activeListings) {
-    await prisma.bid.create({
-      data: {
-        amount: (listing.currentBid ?? listing.startingBid) + 100,
-        listingId: listing.id,
-        bidderId: buyer.id,
-      },
-    });
-  }
-
-  console.log(`Seeded past bids for buyer@hypethrift.com`);
-
+  console.log("Seeded live and past bids for all demo buyers");
   await prisma.$disconnect();
 }
-main().catch(async (e) => {
-  console.error(e);
+
+main().catch(async (error) => {
+  console.error(error);
   await prisma.$disconnect();
   process.exit(1);
 });

@@ -30,7 +30,7 @@ export default async function AccountBidsPage() {
   });
   const orders = await prisma.order.findMany({
     where: { buyerId: session.user.id },
-    select: { id: true, listingId: true, status: true, paymentDeadline: true },
+    select: { id: true, listingId: true, status: true, paymentDeadline: true, itemPaymentDeadline: true },
   });
   const orderByListing = new Map(orders.map((order) => [order.listingId, order]));
 
@@ -47,8 +47,8 @@ export default async function AccountBidsPage() {
     else if (isHighest) status = "Winning";
     else status = "Outbid";
     const order = isEnded && isHighest ? orderByListing.get(bid.listing.id) : undefined;
-    const showTimer = status === "Won" && order && (order.status === "PENDING_CONTACT_FEE" || order.status === "WAITING_VERIFICATION");
-    const paymentDeadline = order?.paymentDeadline;
+    const showTimer = status === "Won" && order && (order.status === "PENDING_CONTACT_FEE" || order.status === "WAITING_VERIFICATION" || order.status === "CONTACT_FEE_PAID");
+    const paymentDeadline = order?.status === "CONTACT_FEE_PAID" ? order.itemPaymentDeadline : order?.paymentDeadline;
     return (
       <div key={bid.id} className="bg-white border-2 border-ink shadow-brut-lg rounded-3xl p-4 hover:bg-ink/5 transition-colors">
         <div className="flex items-center justify-between gap-4">

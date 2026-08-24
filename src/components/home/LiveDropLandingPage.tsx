@@ -10,16 +10,13 @@ import BiddingCard from "@/components/drop/BiddingCard";
 import { SearchIcon, FilterIcon } from "@/components/ui/Icons";
 
 import { CATEGORIES } from "@/data/categories";
-import { PRODUCTS } from "@/data/mockProducts";
 import type { CategoryId, Product } from "@/types";
 import FilterDrawer from "@/components/home/FilterDrawer";
 
-const DEFAULT_FEATURED_ID = 7;
-
-export default function LiveDropLandingPage() {
+export default function LiveDropLandingPage({ products }: { products: Product[] }) {
   const [selectedCategory, setSelectedCategory] = useState<CategoryId>("all");
   const [featuredProduct, setFeaturedProduct] = useState<Product>(
-    () => PRODUCTS.find((p) => p.id === DEFAULT_FEATURED_ID) ?? PRODUCTS[0],
+    () => products.find((p) => p.hot) ?? products[0],
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -28,27 +25,27 @@ export default function LiveDropLandingPage() {
   const categoryCounts = useMemo(
     () =>
       CATEGORIES.reduce<Record<string, number>>((acc, cat) => {
-        acc[cat.id] = cat.id === "all" ? PRODUCTS.length : PRODUCTS.filter((p) => p.category === cat.id).length;
+        acc[cat.id] = cat.id === "all" ? products.length : products.filter((p) => p.category === cat.id).length;
         return acc;
       }, {}),
-    [],
+    [products],
   );
 
   const filteredProducts = useMemo(
     () =>
-      PRODUCTS.filter((p) => {
+      products.filter((p) => {
         const matchesCategory = selectedCategory === "all" || p.category === selectedCategory;
         const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-        const notFeatured = p.id !== featuredProduct.id;
+        const notFeatured = p.id !== featuredProduct?.id;
         return matchesCategory && matchesSearch && notFeatured;
       }),
-    [selectedCategory, searchQuery, featuredProduct.id],
+    [products, selectedCategory, searchQuery, featuredProduct?.id],
   );
 
   const handleCategorySelect = (catId: CategoryId) => {
     setSelectedCategory(catId);
     // Auto-select the top (hot) product in this category as featured
-    const topProduct = PRODUCTS.find((p) => (catId === "all" ? p.hot : p.category === catId));
+    const topProduct = products.find((p) => (catId === "all" ? p.hot : p.category === catId));
     if (topProduct) setFeaturedProduct(topProduct);
     setTimeout(() => {
       gridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -61,6 +58,10 @@ export default function LiveDropLandingPage() {
   };
 
   const activeCategory = CATEGORIES.find((c) => c.id === selectedCategory);
+
+  if (!featuredProduct) {
+    return <div className="min-h-screen bg-cream flex items-center justify-center p-8 font-black uppercase">No live auctions yet.</div>;
+  }
 
   return (
     <div className="min-h-screen bg-cream text-ink overflow-hidden font-sans relative">
@@ -173,7 +174,7 @@ export default function LiveDropLandingPage() {
             <div className="text-center md:text-left">
               <p className="text-sm text-gray-400 font-bold mb-2">Want to sell your thrift?</p>
               <Link
-                href="/apply-seller"
+                href="/seller/register"
                 className="inline-block bg-bubblegum text-ink font-black uppercase px-6 py-3 rounded-full border-2 border-ink shadow-brut-md hover:bg-acid hover:text-ink transition-colors"
               >
                 Sell with Us
