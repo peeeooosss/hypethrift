@@ -1,4 +1,4 @@
-import { Heart, Zap, User, ArrowRight, BadgeCheck, Eye, TrendingUp, Share2, Star, Search } from "lucide-react";
+import { Heart, Zap, User, ArrowRight, BadgeCheck, Eye, TrendingUp, Share2, Star, Search, Filter } from "lucide-react";
 
 export interface IconProps {
   size?: number;
@@ -47,4 +47,8 @@ export function StarIcon({ size = 16, className }: IconProps) {
 
 export function SearchIcon({ size = 18, className }: IconProps) {
   return <Search size={size} strokeWidth={2.5} className={className} />;
+}
+
+export function FilterIcon({ size = 20, className }: IconProps) {
+  return <Filter size={size} strokeWidth={2.5} className={className} />;
 }

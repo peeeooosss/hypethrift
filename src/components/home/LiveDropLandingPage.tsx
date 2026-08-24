@@ -7,11 +7,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import CategoryBar from "@/components/ui/CategoryBar";
 import ProductCard from "@/components/drop/ProductCard";
 import BiddingCard from "@/components/drop/BiddingCard";
-import { SearchIcon } from "@/components/ui/Icons";
+import { SearchIcon, FilterIcon } from "@/components/ui/Icons";
 
 import { CATEGORIES } from "@/data/categories";
 import { PRODUCTS } from "@/data/mockProducts";
 import type { CategoryId, Product } from "@/types";
+import FilterDrawer from "@/components/home/FilterDrawer";
 
 const DEFAULT_FEATURED_ID = 7;
 
@@ -21,6 +22,7 @@ export default function LiveDropLandingPage() {
     () => PRODUCTS.find((p) => p.id === DEFAULT_FEATURED_ID) ?? PRODUCTS[0],
   );
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
   const gridRef = useRef<HTMLElement>(null);
 
   const categoryCounts = useMemo(
@@ -117,6 +119,8 @@ export default function LiveDropLandingPage() {
               {filteredProducts.length} live {filteredProducts.length === 1 ? "drop" : "drops"} available
             </p>
           </div>
+</div>
+        <div className="flex items-center gap-3">
           <div className="hidden md:flex items-center gap-2 bg-white border-2 border-ink rounded-full px-4 py-2 shadow-brut-xs">
             <span className="text-xs font-black uppercase">Sort:</span>
             <select aria-label="Sort drops" className="bg-transparent text-xs font-black uppercase focus:outline-none cursor-pointer">
@@ -126,8 +130,16 @@ export default function LiveDropLandingPage() {
               <option>Most Bids</option>
             </select>
           </div>
+          <button
+            onClick={() => setFilterOpen(true)}
+            className="p-3 bg-ink text-white border-2 border-ink rounded-full shadow-brut-md hover:bg-bubblegum hover:text-ink transition-colors"
+            aria-label="Open filters"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.414V4z" />
+            </svg>
+          </button>
         </div>
-
         {filteredProducts.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             <AnimatePresence mode="popLayout">
@@ -180,6 +192,7 @@ export default function LiveDropLandingPage() {
           </div>
         </div>
       </footer>
+      <FilterDrawer isOpen={filterOpen} onClose={() => setFilterOpen(false)} />
     </div>
   );
 }
