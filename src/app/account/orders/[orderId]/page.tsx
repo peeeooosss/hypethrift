@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatAddress, whatsappUrl } from "@/lib/platform";
+import CountdownTimer from "@/components/ui/CountdownTimer";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -48,7 +49,12 @@ export default async function AccountOrderStatusPage({ params }: { params: Promi
       <div className="bg-white border-2 border-ink shadow-brut-lg rounded-3xl p-6 md:p-8">
         <div className="flex flex-wrap justify-between gap-3">
           <div><p className="text-xs uppercase font-black text-gray-500">Order ID</p><p className="font-black break-all">{order.id}</p></div>
-          <span className="bg-acid border-2 border-ink rounded-full px-3 py-1 text-xs font-black uppercase">{LABELS[order.status] ?? order.status}</span>
+          <div className="flex items-center gap-2">
+            <span className="bg-acid border-2 border-ink rounded-full px-3 py-1 text-xs font-black uppercase">{LABELS[order.status] ?? order.status}</span>
+            {(order.status === "PENDING_CONTACT_FEE" || order.status === "WAITING_VERIFICATION") && order.paymentDeadline && (
+              <CountdownTimer deadline={order.paymentDeadline} compact />
+            )}
+          </div>
         </div>
         <div className="mt-6 border-t-2 border-dashed border-ink/20 pt-5">
           <p className="font-black uppercase">{order.listing.category.emoji} {order.listing.title}</p>

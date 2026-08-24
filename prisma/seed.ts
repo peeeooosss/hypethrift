@@ -105,9 +105,71 @@ async function main() {
   }
   console.log(`Seeded ${DEMO_LISTINGS.length} demo listings`);
 
+  // Create demo buyer user for past bids
+  const buyer = await prisma.user.upsert({
+    where: { email: "buyer@hypethrift.com" },
+    update: {},
+    create: {
+      email: "buyer@hypethrift.com",
+      password: await bcrypt.hash("buyer123", 10),
+      name: "Demo Buyer",
+      role: "CUSTOMER",
+    },
+  });
+  console.log("Seeded buyer: buyer@hypethrift.com / buyer123");
+
+  // Create some past bids (won and lost) for the demo buyer
+  const pastListings = await prisma.listing.findMany({
+    where: { status: { in: ["SOLD", "ENDED"] } },
+    take: 5,
+  });
+
+  for (const listing of pastListings) {
+    // Create a winning bid for the demo buyer
+    const winningBid = await prisma.bid.create({
+      data: {
+        amount: (listing.currentBid ?? listing.startingBid) + 500,
+        listingId: listing.id,
+        bidderId: buyer.id,
+      },
+    });
+
+    // Create order for won bids
+    if (listing.status === "SOLD") {
+      await prisma.order.create({
+        data: {
+          listingId: listing.id,
+          buyerId: buyer.id,
+          sellerId: listing.sellerId,
+          finalPrice: winningBid.amount,
+          platformFee: 69,
+          status: "COMPLETED",
+          paymentDeadline: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        },
+      });
+    }
+  }
+
+  // Create some lost bids for other listings
+  const activeListings = await prisma.listing.findMany({
+    where: { status: "ACTIVE" },
+    take: 3,
+  });
+
+  for (const listing of activeListings) {
+    await prisma.bid.create({
+      data: {
+        amount: (listing.currentBid ?? listing.startingBid) + 100,
+        listingId: listing.id,
+        bidderId: buyer.id,
+      },
+    });
+  }
+
+  console.log(`Seeded past bids for buyer@hypethrift.com`);
+
   await prisma.$disconnect();
 }
-
 main().catch(async (e) => {
   console.error(e);
   await prisma.$disconnect();

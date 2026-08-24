@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import CountdownTimer from "@/components/ui/CountdownTimer";
 
 export const revalidate = 0;
 
@@ -15,14 +16,23 @@ export default async function AccountProfilePage() {
   const session = await auth();
   const user = session?.user;
 
-  const [ordersCount, bidsCount, savedCount, addressesCount] = user
+  const [ordersCount, bidsCount, savedCount, addressesCount, activeOrders] = user
     ? await Promise.all([
         prisma.order.count({ where: { buyerId: user.id } }),
         prisma.bid.count({ where: { bidderId: user.id } }),
         prisma.savedItem.count({ where: { userId: user.id } }),
         prisma.address.count({ where: { userId: user.id } }),
+        prisma.order.findMany({
+          where: {
+            buyerId: user.id,
+            status: { in: ["PENDING_CONTACT_FEE", "WAITING_VERIFICATION", "CONTACT_FEE_PAID"] },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 3,
+          include: { listing: { select: { title: true, category: true, size: true, images: true } } },
+        }),
       ])
-    : [0, 0, 0, 0];
+    : [0, 0, 0, 0, []];
 
   if (!user) {
     return (
@@ -110,6 +120,58 @@ export default async function AccountProfilePage() {
           </Link>
         )}
       </div>
+
+      {activeOrders.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-xl font-black uppercase">Active Orders</h2>
+          <div className="space-y-3">
+            {activeOrders.map((order) => {
+              const statusLabel = order.status === "PENDING_CONTACT_FEE"
+                ? "Contact Fee Required"
+                : order.status === "WAITING_VERIFICATION"
+                ? "Waiting for Verification"
+                : "Seller Details Unlocked";
+              return (
+                <Link
+                  key={order.id}
+                  href={"/account/orders/" + order.id}
+                  className="block bg-white border-2 border-ink shadow-brut-lg rounded-3xl p-4 hover:bg-ink/5 transition-colors"
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      {order.listing.images?.[0] ? (
+                        <img
+                          src={order.listing.images[0]}
+                          alt={order.listing.title}
+                          className="w-12 h-12 rounded-xl border-2 border-ink object-cover"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-xl border-2 border-dashed border-ink/30 bg-gray-50 flex items-center justify-center text-2xl">
+                          {order.listing.category?.emoji ?? "📦"}
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-black uppercase line-clamp-1">{order.listing.title}</p>
+                        <p className="text-xs text-gray-500 font-bold">
+                          {order.listing.category?.emoji} {order.listing.category?.name} \u00B7 Size: {order.listing.size ?? "\u2014"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                      <span className="text-xs font-black uppercase bg-acid border-2 border-ink px-2 py-1 rounded-full">
+                        {statusLabel}
+                      </span>
+                      {order.paymentDeadline && (
+                        <CountdownTimer deadline={order.paymentDeadline} compact />
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

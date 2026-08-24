@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import CountdownTimer from "@/components/ui/CountdownTimer";
 
 export const revalidate = 0;
 
@@ -29,7 +30,7 @@ export default async function AccountBidsPage() {
   });
   const orders = await prisma.order.findMany({
     where: { buyerId: session.user.id },
-    select: { id: true, listingId: true, status: true },
+    select: { id: true, listingId: true, status: true, paymentDeadline: true },
   });
   const orderByListing = new Map(orders.map((order) => [order.listingId, order]));
 
@@ -46,6 +47,8 @@ export default async function AccountBidsPage() {
     else if (isHighest) status = "Winning";
     else status = "Outbid";
     const order = isEnded && isHighest ? orderByListing.get(bid.listing.id) : undefined;
+    const showTimer = status === "Won" && order && (order.status === "PENDING_CONTACT_FEE" || order.status === "WAITING_VERIFICATION");
+    const paymentDeadline = order?.paymentDeadline;
     return (
       <div key={bid.id} className="bg-white border-2 border-ink shadow-brut-lg rounded-3xl p-4 hover:bg-ink/5 transition-colors">
         <div className="flex items-center justify-between gap-4">
@@ -60,6 +63,9 @@ export default async function AccountBidsPage() {
           </Link>
           <div className="flex flex-col items-end gap-2 flex-shrink-0">
             <span className="text-xs font-black uppercase border border-ink px-2 py-1 rounded-full">{status}</span>
+            {showTimer && (
+              <CountdownTimer deadline={paymentDeadline} compact />
+            )}
             {status === "Won" && (!order || order.status === "PENDING_CONTACT_FEE" || order.status === "REJECTED") && (
               <Link href={`/account/bids/${encodeURIComponent(bid.listing.id)}/contact`} className="bg-bubblegum border-2 border-ink px-3 py-1 rounded-full text-xs font-black uppercase hover:bg-acid">
                 Contact now
