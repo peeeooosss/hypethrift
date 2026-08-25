@@ -80,7 +80,6 @@ export default function LiveDropLandingPage({ products }: { products: Product[] 
         <Link href="/" className="text-2xl font-black uppercase tracking-tighter">
           HypeThrift
         </Link>
-        <div className="flex items-center gap-4" />
       </nav>
 
       <CategoryBar selected={selectedCategory} onSelect={handleCategorySelect} counts={categoryCounts} />
