@@ -14,21 +14,26 @@ export const authConfig = {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
       const role = auth?.user?.role;
+      const isBanned = Boolean((auth?.user as { isBanned?: boolean } | undefined)?.isBanned);
       const path = nextUrl.pathname;
 
       if (path === "/seller" || path === "/seller/register" || path === "/seller/verification" || path === "/admin/login") {
         return true;
       }
 
+      if (!isLoggedIn) {
+        if (path.startsWith("/seller")) {
+          return Response.redirect(new URL("/seller", nextUrl));
+        }
+        return false;
+      }
+      if (isBanned) return false;
+
       if (path.startsWith("/admin")) {
-        if (!isLoggedIn) return false;
         return role === "ADMIN";
       }
 
       if (path.startsWith("/seller")) {
-        if (!isLoggedIn) {
-          return Response.redirect(new URL("/seller", nextUrl));
-        }
         if (role === "ADMIN") return true;
         if (role !== "SELLER") {
           return Response.redirect(new URL("/account", nextUrl));
@@ -42,7 +47,7 @@ export const authConfig = {
       }
 
       if (path.startsWith("/account")) {
-        return isLoggedIn;
+        return true;
       }
 
       return true;
@@ -51,6 +56,7 @@ export const authConfig = {
       if (user) {
         token.id = user.id;
         token.role = user.role;
+        token.sellerStatus = (user as { sellerStatus?: unknown }).sellerStatus ?? null;
       }
       return token;
     },
@@ -58,6 +64,9 @@ export const authConfig = {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as "CUSTOMER" | "SELLER" | "ADMIN";
+        session.user.sellerStatus = token.sellerStatus as "PENDING" | "APPROVED" | "REJECTED" | null | undefined;
+        session.user.sellerNote = token.sellerNote as string | null | undefined;
+        (session.user as { isBanned?: boolean }).isBanned = token.banned as boolean | undefined;
       }
       return session;
     },
