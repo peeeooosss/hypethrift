@@ -102,7 +102,7 @@ export default function AuthForm({ mode, action, portal = "customer" }: AuthForm
           ) : (
             <>
               Already a member?{" "}
-              <Link href={portal === "seller" ? "/seller/login" : "/login"} className="text-ink underline decoration-acid decoration-2">
+              <Link href={portal === "seller" ? "/seller" : "/login"} className="text-ink underline decoration-acid decoration-2">
                 {portal === "seller" ? "Seller sign in" : "Sign in"}
               </Link>
             </>
@@ -111,7 +111,7 @@ export default function AuthForm({ mode, action, portal = "customer" }: AuthForm
 
         {isLogin && portal === "customer" && (
           <div className="flex justify-center gap-4 mt-4 text-xs font-black uppercase">
-            <Link href="/seller/login" className="underline decoration-bubblegum decoration-2">
+            <Link href="/seller" className="underline decoration-bubblegum decoration-2">
               Seller Login
             </Link>
           </div>

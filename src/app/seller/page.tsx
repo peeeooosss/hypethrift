@@ -1,19 +1,9 @@
-import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { sellerLoginAction } from "@/actions/auth-actions";
-import { sellerRegisterAction } from "@/actions/auth-actions";
+import { sellerPortalLoginAction, sellerPortalRegisterAction } from "./actions";
 import { SELLER_AGREEMENT } from "@/data/agreements";
 import AgreementSections from "@/components/legal/AgreementSections";
-
-async function loginAction(formData: FormData) {
-  await sellerLoginAction(null, formData);
-}
-
-async function registerAction(formData: FormData) {
-  await sellerRegisterAction(null, formData);
-}
 
 export default async function SellerPortalPage() {
   const session = await auth();
@@ -21,7 +11,7 @@ export default async function SellerPortalPage() {
   if (session?.user?.role === "SELLER") {
     const status = session.user.sellerStatus;
     if (status === "APPROVED") {
-      return <SellerDashboard userId={session.user.id} />;
+      redirect("/seller/dashboard");
     }
     if (status === "PENDING" || status === "REJECTED") {
       redirect("/seller/verification");
@@ -47,7 +37,7 @@ export default async function SellerPortalPage() {
               <p className="text-gray-500 font-bold mt-1">Sign in to access your seller dashboard</p>
             </div>
 
-            <form action={loginAction} className="space-y-5">
+            <form action={sellerPortalLoginAction} className="space-y-5">
               <div>
                 <label className="text-xs uppercase font-black text-gray-500 tracking-widest">Email</label>
                 <input
@@ -84,7 +74,7 @@ export default async function SellerPortalPage() {
               <p className="text-gray-600 font-bold mt-1">Create your store and start selling today</p>
             </div>
 
-            <form action={registerAction} className="space-y-5">
+            <form action={sellerPortalRegisterAction} className="space-y-5">
               <div>
                 <label className="text-xs uppercase font-bold text-gray-700 tracking-widest">Your Name</label>
                 <input
@@ -172,57 +162,5 @@ export default async function SellerPortalPage() {
         </div>
       </div>
     </main>
-  );
-}
-
-async function SellerDashboard({ userId }: { userId: string }) {
-  const [listings, totalBids, recentOrders] = await Promise.all([
-    prisma.listing.findMany({ where: { sellerId: userId }, orderBy: { createdAt: "desc" }, take: 5 }),
-    prisma.bid.count({ where: { listing: { sellerId: userId } } }),
-    prisma.order.findMany({ where: { sellerId: userId }, orderBy: { createdAt: "desc" }, take: 5 }),
-  ]);
-
-  const stats = [
-    { label: "Listings", value: listings.length },
-    { label: "Total Bids", value: totalBids },
-    { label: "Orders", value: recentOrders.length },
-  ];
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-black uppercase">Seller Dashboard</h1>
-        <Link
-          href="/seller/listings/new"
-          className="bg-ink text-white px-4 py-2 rounded-full text-xs font-black uppercase border-2 border-ink hover:bg-acid hover:text-ink transition-colors"
-        >
-          + New Drop
-        </Link>
-      </div>
-      <div className="grid grid-cols-3 gap-4">
-        {stats.map((s) => (
-          <div key={s.label} className="bg-white border-2 border-ink shadow-brut-md rounded-2xl p-5">
-            <p className="text-3xl font-black">{s.value}</p>
-            <p className="text-xs uppercase font-bold text-gray-500 tracking-wider">{s.label}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="bg-white border-2 border-ink shadow-brut-lg rounded-2xl p-6">
-        <h2 className="text-xl font-black uppercase mb-4">Recent Listings</h2>
-        {listings.length === 0 ? (
-          <p className="text-gray-500 font-bold">No listings yet. Create your first drop!</p>
-        ) : (
-          <ul className="divide-y-2 divide-dashed divide-ink/20">
-            {listings.map((l) => (
-              <li key={l.id} className="py-3 flex justify-between items-center">
-                <span className="font-black">{l.title}</span>
-                <span className="text-xs font-bold uppercase text-gray-500">{l.status}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </div>
   );
 }

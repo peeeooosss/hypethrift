@@ -26,11 +26,19 @@ export const authConfig = {
       }
 
       if (path.startsWith("/seller")) {
-        if (!isLoggedIn) return false;
+        if (!isLoggedIn) {
+          return Response.redirect(new URL("/seller", nextUrl));
+        }
+        if (role === "ADMIN") return true;
+        if (role !== "SELLER") {
+          return Response.redirect(new URL("/account", nextUrl));
+        }
         const sellerStatus = auth?.user?.sellerStatus;
         const isApproved = sellerStatus === "APPROVED";
-        if (!isApproved && path !== "/seller/verification") return false;
-        return role === "SELLER" || role === "ADMIN";
+        if (!isApproved && path !== "/seller/verification") {
+          return Response.redirect(new URL("/seller/verification", nextUrl));
+        }
+        return true;
       }
 
       if (path.startsWith("/account")) {

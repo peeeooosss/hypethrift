@@ -54,7 +54,7 @@ export default function SellerRegisterForm() {
       </label>
       <SubmitButton />
       <p className="text-center text-sm font-bold text-gray-500">
-        Already have a seller account? <Link href="/seller/login" className="underline text-ink">Seller login</Link>
+        Already have a seller account? <Link href="/seller" className="underline text-ink">Seller login</Link>
       </p>
     </form>
   );

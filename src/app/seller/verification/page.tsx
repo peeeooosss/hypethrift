@@ -5,7 +5,7 @@ import Link from "next/link";
 
 export default async function SellerVerificationPage() {
   const session = await auth();
-  if (!session?.user) redirect("/seller/login");
+  if (!session?.user) redirect("/seller");
   if (session.user.role !== "SELLER") redirect("/account");
   const profile = await prisma.sellerProfile.findUnique({ where: { userId: session.user.id } });
   const status = session.user.sellerStatus ?? "PENDING";
@@ -50,7 +50,7 @@ export default async function SellerVerificationPage() {
       )}
       {isApproved && (
         <Link
-          href="/seller"
+          href="/seller/dashboard"
           className="inline-block mt-5 bg-ink text-white border-2 border-ink px-6 py-3 rounded-2xl font-black uppercase text-sm hover:bg-acid hover:text-ink"
         >
           Go to Seller Dashboard
