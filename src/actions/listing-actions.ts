@@ -41,6 +41,19 @@ export async function createListing(prevState: { error?: string; success?: boole
   const rawImages = formData.get("images")?.toString() ?? "";
   const images = rawImages ? rawImages.split(",").map((s) => s.trim()).filter(Boolean) : [];
 
+  if (images.length === 0) return { error: "Upload at least one image" };
+  if (images.length > 8) return { error: "Maximum of 8 images allowed" };
+  // Only accept URLs that came from our UploadThing app
+  const allowedHost = (url: string) => {
+    try {
+      const host = new URL(url).hostname;
+      return host.endsWith(".utfs.io") || host === "utfs.io" || host.endsWith(".ufs.sh") || host === "ufs.sh";
+    } catch {
+      return false;
+    }
+  };
+  if (!images.every(allowedHost)) return { error: "One or more image URLs are invalid. Please re-upload." };
+
   const parsed = listingSchema.safeParse({
     title: formData.get("title"),
     description: formData.get("description"),

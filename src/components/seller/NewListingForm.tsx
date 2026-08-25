@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useActionState } from "react";
-import Image from "next/image";
 import { UploadButton } from "@/components/ui/UploadThing";
 import { createListing } from "@/actions/listing-actions";
 import { getSizesForCategory, isOneSizeCategory } from "@/lib/sizes";
+
+const MAX_IMAGES = 8;
 
 type Category = Awaited<ReturnType<typeof import("@/lib/prisma").prisma.category.findMany>>[number];
 
@@ -15,6 +16,7 @@ interface NewListingFormProps {
 
 export default function NewListingForm({ categories }: NewListingFormProps) {
   const [images, setImages] = useState<string[]>([]);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [serverState, formAction] = useActionState(createListing, null);
@@ -85,30 +87,61 @@ export default function NewListingForm({ categories }: NewListingFormProps) {
          <input type="hidden" name="size" value={selectedSize} />
 
          <div>
-           <label className="block text-xs uppercase font-bold text-gray-500 tracking-widest mb-1">Images</label>
-           {images.length === 0 ? (
-             <UploadButton
-               endpoint="images"
-               onClientUploadComplete={(res) => setImages(res.map((r) => r.url))}
-               onUploadError={(err: Error) => {
-                 console.error(err);
-               }}
-             />
-           ) : (
-             <div className="flex flex-wrap gap-3">
+           <div className="flex items-center justify-between mb-1">
+             <label className="text-xs uppercase font-bold text-gray-500 tracking-widest">Images</label>
+             <span className={`text-xs font-black uppercase ${images.length > 0 ? "text-green-600" : "text-gray-400"}`}>
+               {images.length}/{MAX_IMAGES} uploaded
+             </span>
+           </div>
+
+           {uploadError && (
+             <p className="mb-3 text-red-500 text-sm font-bold bg-red-50 border-2 border-red-200 rounded-xl py-2 px-3">
+               Upload failed: {uploadError}
+             </p>
+           )}
+
+           {images.length > 0 && (
+             <div className="flex flex-wrap gap-3 mb-3">
                {images.map((url) => (
-                 <div key={url} className="w-20 h-20 rounded-xl border-2 border-ink overflow-hidden">
-                   <Image src={url} alt="upload" width={80} height={80} className="w-full h-full object-cover" />
+                 <div key={url} className="relative w-20 h-20 rounded-xl border-2 border-ink overflow-hidden group">
+                   {/* eslint-disable-next-line @next/next/no-img-element */}
+                   <img src={url} alt="upload preview" className="w-full h-full object-cover" />
+                   <button
+                     type="button"
+                     aria-label="Remove image"
+                     onClick={() => setImages((prev) => prev.filter((u) => u !== url))}
+                     className="absolute top-0 right-0 w-6 h-6 bg-ink text-white text-xs font-black flex items-center justify-center"
+                   >
+                     ✕
+                   </button>
                  </div>
                ))}
-               <button
-                 type="button"
-                 onClick={() => setImages((prev) => prev.slice(0, -1))}
-                 className="w-20 h-20 flex items-center justify-center border-2 border-dashed border-ink rounded-xl text-xs font-black"
-               >
-                 Remove last
-               </button>
              </div>
+           )}
+
+           {images.length < MAX_IMAGES && (
+             <UploadButton
+               endpoint="images"
+               appearance={{ button: "bg-ink text-white text-xs font-black uppercase rounded-xl px-4 py-2" }}
+               onClientUploadComplete={(res) => {
+                 setUploadError(null);
+                 setImages((prev) => {
+                   const next = [...prev];
+                   for (const r of res ?? []) {
+                     if (r.url && !next.includes(r.url) && next.length < MAX_IMAGES) {
+                       next.push(r.url);
+                     }
+                   }
+                   return next;
+                 });
+               }}
+               onUploadError={(err: Error) => {
+                 setUploadError(err.message || "Something went wrong. Check your connection and try again.");
+               }}
+             />
+           )}
+           {images.length >= MAX_IMAGES && (
+             <p className="text-xs font-black uppercase text-gray-500">Maximum of {MAX_IMAGES} images reached.</p>
            )}
          </div>
 

@@ -66,9 +66,18 @@ export default async function SellerListingsPage() {
                   <tr key={l.id} className="border-b border-ink/10 last:border-0">
                     <td className="py-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl border-2 border-ink bg-gray-100 flex-shrink-0 flex items-center justify-center text-xl">
-                          📦
-                        </div>
+                        {l.images?.[0] ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img
+                            src={l.images[0]}
+                            alt={l.title}
+                            className="w-12 h-12 rounded-xl border-2 border-ink object-cover flex-shrink-0"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-xl border-2 border-ink bg-gray-100 flex-shrink-0 flex items-center justify-center text-xl">
+                            📦
+                          </div>
+                        )}
                         <span className="font-black">{l.title}</span>
                       </div>
                     </td>

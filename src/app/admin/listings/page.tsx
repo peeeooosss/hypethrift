@@ -39,6 +39,7 @@ function ListingsTable({ items, showModeration }: ListingsTableProps) {
     <table className="w-full text-left">
       <thead>
         <tr className="border-b-2 border-dashed border-ink/20">
+          <th className="pb-2 text-xs uppercase font-black text-gray-500">Image</th>
           <th className="pb-2 text-xs uppercase font-black text-gray-500">Title</th>
           <th className="pb-2 text-xs uppercase font-black text-gray-500">Seller</th>
           <th className="pb-2 text-xs uppercase font-black text-gray-500">Bid</th>
@@ -50,6 +51,20 @@ function ListingsTable({ items, showModeration }: ListingsTableProps) {
       <tbody>
         {items.map((l) => (
           <tr key={l.id} className="border-b border-ink/10">
+            <td className="py-3">
+              {l.images?.[0] ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={l.images[0]}
+                  alt={l.title}
+                  className="w-12 h-12 rounded-xl border-2 border-ink object-cover"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-xl border-2 border-ink bg-gray-100 flex items-center justify-center text-xl">
+                  📦
+                </div>
+              )}
+            </td>
             <td className="py-3 font-black">{l.title}</td>
             <td className="py-3 text-xs">{l.seller.name ?? l.seller.email}</td>
             <td className="py-3 text-xs">₹{l.currentBid ?? l.startingBid}</td>
