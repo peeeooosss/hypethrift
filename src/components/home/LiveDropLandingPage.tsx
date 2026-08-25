@@ -75,6 +75,27 @@ export default function LiveDropLandingPage({ products }: { products: Product[] 
         />
       </div>
 
+      {/* Top Navigation */}
+      <nav className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+        <Link href="/" className="text-2xl font-black uppercase tracking-tighter">
+          HypeThrift
+        </Link>
+        <div className="flex items-center gap-4">
+          <Link
+            href="/login"
+            className="bg-ink text-white font-black uppercase text-sm py-2 px-4 rounded-full border-2 border-ink shadow-brut-md hover:bg-acid hover:text-ink transition-colors"
+          >
+            Customer Login
+          </Link>
+          <Link
+            href="/seller"
+            className="bg-bubblegum text-ink font-black uppercase text-sm py-2 px-4 rounded-full border-2 border-ink shadow-brut-md hover:bg-acid hover:text-ink transition-colors"
+          >
+            Seller Portal
+          </Link>
+        </div>
+      </nav>
+
       <CategoryBar selected={selectedCategory} onSelect={handleCategorySelect} counts={categoryCounts} />
 
       {/* Search Bar */}
@@ -167,14 +188,14 @@ export default function LiveDropLandingPage({ products }: { products: Product[] 
         )}
       </section>
 
-      {/* Seller Onboarding Footer */}
+      {/* Seller Portal Footer */}
       <footer className="bg-ink text-white py-12 mt-20">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-center gap-6">
             <div className="text-center md:text-left">
               <p className="text-sm text-gray-400 font-bold mb-2">Want to sell your thrift?</p>
               <Link
-                href="/seller/register"
+                href="/seller"
                 className="inline-block bg-bubblegum text-ink font-black uppercase px-6 py-3 rounded-full border-2 border-ink shadow-brut-md hover:bg-acid hover:text-ink transition-colors"
               >
                 Sell with Us
@@ -184,10 +205,10 @@ export default function LiveDropLandingPage({ products }: { products: Product[] 
             <div className="text-center md:text-left">
               <p className="text-sm text-gray-400 font-bold mb-2">Already a seller?</p>
               <Link
-                href="/seller/login"
+                href="/seller"
                 className="inline-block bg-white text-ink font-black uppercase px-6 py-3 rounded-full border-2 border-white shadow-brut-md hover:bg-acid hover:text-ink transition-colors"
               >
-                Seller Login
+                Seller Portal
               </Link>
             </div>
           </div>

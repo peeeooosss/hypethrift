@@ -9,11 +9,11 @@ export default function Footer() {
           <p className="text-sm text-gray-400 font-bold">Bid. Win. Flex. Repeat.</p>
         </div>
         <div className="flex flex-wrap gap-4 text-sm">
-          <Link href="/seller/login" className="font-black hover:text-acid transition-colors">
-            Seller Login
+          <Link href="/seller" className="font-black hover:text-acid transition-colors">
+            Seller Portal
           </Link>
           <span className="text-ink/30">|</span>
-          <Link href="/apply-seller" className="font-black hover:text-acid transition-colors">
+          <Link href="/seller" className="font-black hover:text-acid transition-colors">
             Sell with us
           </Link>
           <span className="text-ink/30">|</span>
