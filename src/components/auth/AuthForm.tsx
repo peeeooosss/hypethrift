@@ -108,22 +108,6 @@ export default function AuthForm({ mode, action, portal = "customer" }: AuthForm
             </>
           )}
         </p>
-
-        {isLogin && portal === "customer" && (
-          <div className="flex justify-center gap-4 mt-4 text-xs font-black uppercase">
-            <Link href="/seller" className="underline decoration-bubblegum decoration-2">
-              Seller Login
-            </Link>
-          </div>
-        )}
-
-        {isLogin && portal !== "customer" && (
-          <p className="text-center text-xs font-black uppercase mt-4">
-            <Link href="/login" className="underline decoration-acid decoration-2">
-              Customer Login
-            </Link>
-          </p>
-        )}
       </div>
     </div>
   );

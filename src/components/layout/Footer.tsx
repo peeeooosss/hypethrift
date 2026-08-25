@@ -10,11 +10,11 @@ export default function Footer() {
         </div>
         <div className="flex flex-wrap gap-4 text-sm">
           <Link href="/seller" className="font-black hover:text-acid transition-colors">
-            Seller Portal
+            Seller Login
           </Link>
           <span className="text-ink/30">|</span>
-          <Link href="/seller" className="font-black hover:text-acid transition-colors">
-            Sell with us
+          <Link href="/seller/register" className="font-black hover:text-acid transition-colors">
+            Register as Seller
           </Link>
           <span className="text-ink/30">|</span>
           <Link href="/listings" className="font-black hover:text-acid transition-colors">

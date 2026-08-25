@@ -80,20 +80,7 @@ export default function LiveDropLandingPage({ products }: { products: Product[] 
         <Link href="/" className="text-2xl font-black uppercase tracking-tighter">
           HypeThrift
         </Link>
-        <div className="flex items-center gap-4">
-          <Link
-            href="/login"
-            className="bg-ink text-white font-black uppercase text-sm py-2 px-4 rounded-full border-2 border-ink shadow-brut-md hover:bg-acid hover:text-ink transition-colors"
-          >
-            Customer Login
-          </Link>
-          <Link
-            href="/seller"
-            className="bg-bubblegum text-ink font-black uppercase text-sm py-2 px-4 rounded-full border-2 border-ink shadow-brut-md hover:bg-acid hover:text-ink transition-colors"
-          >
-            Seller Portal
-          </Link>
-        </div>
+        <div className="flex items-center gap-4" />
       </nav>
 
       <CategoryBar selected={selectedCategory} onSelect={handleCategorySelect} counts={categoryCounts} />
