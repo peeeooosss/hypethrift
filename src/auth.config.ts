@@ -16,7 +16,7 @@ export const authConfig = {
       const role = auth?.user?.role;
       const path = nextUrl.pathname;
 
-      if (path === "/seller/login" || path === "/seller/register" || path === "/seller/verification" || path === "/admin/login") {
+      if (path === "/seller/register" || path === "/seller/verification" || path === "/admin/login") {
         return true;
       }
 

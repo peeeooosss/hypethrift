@@ -37,14 +37,6 @@ export default async function AccountPage() {
           </Link>
         ))}
       </div>
-
-      <Link
-        href="/apply-seller"
-        className="block bg-bubblegum border-2 border-ink shadow-brut-lg rounded-3xl p-5 hover:bg-acid transition-colors"
-      >
-        <h2 className="text-xl font-black uppercase">Sell on HypeThrift</h2>
-        <p className="text-sm font-bold mt-1">Apply to open your own thrift store.</p>
-      </Link>
     </div>
   );
 }

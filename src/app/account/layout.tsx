@@ -11,8 +11,6 @@ const NAV = [
   { href: "/account/support", label: "Support" },
 ];
 
-const SELLER_LINK = { href: "/seller/register", label: "Create seller account" };
-
 export default async function AccountLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   if (!session?.user) redirect("/login");
@@ -33,14 +31,6 @@ export default async function AccountLayout({ children }: { children: React.Reac
                 {item.label}
               </Link>
             ))}
-            {(session.user.role === "CUSTOMER" && session.user.sellerStatus !== "APPROVED") && (
-              <Link
-                href={SELLER_LINK.href}
-                className="whitespace-nowrap px-4 py-2 rounded-full border-2 border-bubblegum bg-bubblegum text-ink font-black uppercase text-xs hover:bg-acid transition-colors"
-              >
-                {SELLER_LINK.label}
-              </Link>
-            )}
           </nav>
           <form
             action={async () => {
