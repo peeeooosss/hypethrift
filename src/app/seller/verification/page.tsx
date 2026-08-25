@@ -53,7 +53,7 @@ export default async function SellerVerificationPage() {
           href="/seller"
           className="inline-block mt-5 bg-ink text-white border-2 border-ink px-6 py-3 rounded-2xl font-black uppercase text-sm hover:bg-acid hover:text-ink"
         >
-          Go to Seller Dashboard
+          Go Back to Seller Login Page
         </Link>
       )}
     </div>
