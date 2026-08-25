@@ -16,7 +16,7 @@ export const authConfig = {
       const role = auth?.user?.role;
       const path = nextUrl.pathname;
 
-      if (path === "/seller/login" || path === "/seller/register" || path === "/admin/login") {
+      if (path === "/seller/login" || path === "/seller/register" || path === "/seller/verification" || path === "/admin/login") {
         return true;
       }
 
@@ -27,6 +27,9 @@ export const authConfig = {
 
       if (path.startsWith("/seller")) {
         if (!isLoggedIn) return false;
+        const sellerStatus = auth?.user?.sellerStatus;
+        const isApproved = sellerStatus === "APPROVED";
+        if (!isApproved && path !== "/seller/verification") return false;
         return role === "SELLER" || role === "ADMIN";
       }
 

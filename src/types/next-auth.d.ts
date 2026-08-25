@@ -8,6 +8,7 @@ declare module "next-auth" {
       role: UserRole;
       isBanned?: boolean;
       sellerStatus?: "PENDING" | "APPROVED" | "REJECTED" | null;
+      sellerNote?: string | null;
     } & DefaultSession["user"];
   }
 
@@ -23,6 +24,7 @@ declare module "next-auth/jwt" {
     id: string;
     role: UserRole;
     sellerStatus?: "PENDING" | "APPROVED" | "REJECTED" | null;
+    sellerNote?: string | null;
     roleCheckedAt?: number;
     banned?: boolean;
   }

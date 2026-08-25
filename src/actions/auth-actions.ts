@@ -69,6 +69,9 @@ export async function sellerLoginAction(_prevState: { error?: string } | null, f
   const user = email
     ? await prisma.user.findUnique({ where: { email }, select: { sellerStatus: true } })
     : null;
+  if (user?.sellerStatus === "REJECTED") {
+    return { error: "Your seller application was rejected. Please check /seller/verification for details." };
+  }
   return loginForRole(formData, ["SELLER"], user?.sellerStatus === "APPROVED" ? "/seller" : "/seller/verification", true);
 }
 

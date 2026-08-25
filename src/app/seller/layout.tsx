@@ -17,6 +17,14 @@ export default async function SellerLayout({ children }: { children: React.React
   if (!session?.user) redirect("/login");
   if (session.user.role !== "SELLER" && session.user.role !== "ADMIN") redirect("/account");
 
+  const sellerStatus = session.user.sellerStatus;
+  const isApproved = sellerStatus === "APPROVED";
+  const isVerificationPage = session.user.role === "SELLER" && !isApproved;
+
+  if (!isApproved && !isVerificationPage) {
+    redirect("/seller/verification");
+  }
+
   return (
     <div className="min-h-screen bg-cream font-sans">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-6 p-4 py-8">

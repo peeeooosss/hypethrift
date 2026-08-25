@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { approveSeller, rejectSeller } from "@/actions/admin-actions";
 
 export default async function AdminSellersPage() {
-  const [pending, approved] = await Promise.all([
+  const [pending, approved, rejected] = await Promise.all([
     prisma.user.findMany({
       where: { role: "SELLER", sellerStatus: "PENDING" },
       orderBy: { createdAt: "desc" },
@@ -11,6 +11,11 @@ export default async function AdminSellersPage() {
     prisma.user.findMany({
       where: { role: "SELLER", sellerStatus: "APPROVED" },
       orderBy: { createdAt: "desc" },
+      include: { sellerProfile: true },
+    }),
+    prisma.user.findMany({
+      where: { role: "SELLER", sellerStatus: "REJECTED" },
+      orderBy: { updatedAt: "desc" },
       include: { sellerProfile: true },
     }),
   ]);
@@ -44,7 +49,11 @@ export default async function AdminSellersPage() {
                   <td className="py-3 text-sm font-black">{u.sellerProfile?.storeName ?? "—"}</td>
                   <td className="py-3 text-sm">{u.sellerProfile?.whatsappNumber ?? "—"}</td>
                   <td className="py-3 text-sm">{u.sellerProfile?.location ?? "—"}</td>
-                  <td className="py-3 text-xs text-gray-500">{new Date(u.createdAt).toLocaleDateString()}</td>
+                  <td className="py-3 text-xs text-gray-500">
+                    {u.sellerProfile?.acceptedAt
+                      ? new Date(u.sellerProfile.acceptedAt).toLocaleDateString()
+                      : new Date(u.createdAt).toLocaleDateString()}
+                  </td>
                   <td className="py-3 text-right space-x-2">
                     <form action={approveSeller} className="inline">
                       <input type="hidden" name="userId" value={u.id} />
@@ -52,6 +61,13 @@ export default async function AdminSellersPage() {
                     </form>
                     <form action={rejectSeller} className="inline">
                       <input type="hidden" name="userId" value={u.id} />
+                      <input
+                        type="text"
+                        name="note"
+                        placeholder="Rejection reason"
+                        required
+                        className="border-2 border-ink rounded-full px-3 py-1 text-xs font-bold mr-2 w-48"
+                      />
                       <button className="bg-bubblegum border-2 border-ink px-3 py-1 rounded-full text-xs font-black hover:shadow-brut-xs">Reject</button>
                     </form>
                   </td>
@@ -72,6 +88,43 @@ export default async function AdminSellersPage() {
             </li>
           ))}
         </ul>
+      </section>
+
+      <section className="bg-white border-2 border-ink shadow-brut-lg rounded-2xl p-6">
+        <h2 className="text-xl font-black uppercase mb-4">Rejected Sellers ({rejected.length})</h2>
+        {rejected.length === 0 ? (
+          <p className="text-gray-500 font-bold">No rejected applications.</p>
+        ) : (
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b-2 border-dashed border-ink/20">
+                <th className="pb-2 text-xs uppercase font-black text-gray-500">Seller</th>
+                <th className="pb-2 text-xs uppercase font-black text-gray-500">Email</th>
+                <th className="pb-2 text-xs uppercase font-black text-gray-500">Store</th>
+                <th className="pb-2 text-xs uppercase font-black text-gray-500">Reason</th>
+                <th className="pb-2 text-xs uppercase font-black text-gray-500">Rejected</th>
+                <th className="pb-2 text-xs uppercase font-black text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rejected.map((u) => (
+                <tr key={u.id} className="border-b border-ink/10">
+                  <td className="py-3 font-black">{u.name ?? "—"}</td>
+                  <td className="py-3 text-sm">{u.email}</td>
+                  <td className="py-3 text-sm font-black">{u.sellerProfile?.storeName ?? "—"}</td>
+                  <td className="py-3 text-sm text-red-600">{u.sellerNote ?? "No reason provided"}</td>
+                  <td className="py-3 text-xs text-gray-500">{new Date(u.updatedAt).toLocaleDateString()}</td>
+                  <td className="py-3 text-right space-x-2">
+                    <form action={approveSeller} className="inline">
+                      <input type="hidden" name="userId" value={u.id} />
+                      <button className="bg-acid border-2 border-ink px-3 py-1 rounded-full text-xs font-black hover:shadow-brut-xs">Re-approve</button>
+                    </form>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </section>
     </div>
   );
