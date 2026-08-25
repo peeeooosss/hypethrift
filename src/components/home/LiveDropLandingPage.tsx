@@ -16,7 +16,7 @@ import FilterDrawer from "@/components/home/FilterDrawer";
 export default function LiveDropLandingPage({ products }: { products: Product[] }) {
   const [selectedCategory, setSelectedCategory] = useState<CategoryId>("all");
   const [featuredProduct, setFeaturedProduct] = useState<Product>(
-    () => products.find((p) => p.hot) ?? products[0],
+    () => products.find((p) => p.featured) ?? products.find((p) => p.hot) ?? products[0],
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -44,8 +44,11 @@ export default function LiveDropLandingPage({ products }: { products: Product[] 
 
   const handleCategorySelect = (catId: CategoryId) => {
     setSelectedCategory(catId);
-    // Auto-select the top (hot) product in this category as featured
-    const topProduct = products.find((p) => (catId === "all" ? p.hot : p.category === catId));
+    // Auto-select the featured (paid placement) product, else hot, in this category
+    const topProduct =
+      products.find((p) => catId !== "all" && p.category === catId && p.featured) ??
+      products.find((p) => (catId === "all" ? p.hot : p.category === catId && p.hot)) ??
+      products.find((p) => (catId === "all" ? true : p.category === catId));
     if (topProduct) setFeaturedProduct(topProduct);
     setTimeout(() => {
       gridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });

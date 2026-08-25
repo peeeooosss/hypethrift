@@ -27,6 +27,7 @@ function timeRemaining(end: string) {
 export default async function ListingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const rawId = (await params).id;
   const id = decodeURIComponent(rawId);
+  const session = await auth();
   const listing = await prisma.listing.findUnique({
     where: { id },
     include: {
@@ -35,14 +36,17 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
       bids: {
         orderBy: { createdAt: "desc" },
         take: 20,
-        include: { bidder: { select: { name: true, email: true, image: true } } },
+        include: { bidder: { select: { name: true, image: true } } },
       },
     },
   });
 
   if (!listing) notFound();
 
-  const session = await auth();
+  // Draft / pending-review / rejected listings are only visible to their owner or an admin.
+  const isPublicStatus = ["ACTIVE", "ENDED", "SOLD"].includes(listing.status);
+  const isOwnerOrAdmin = session?.user && (session.user.id === listing.sellerId || session.user.role === "ADMIN");
+  if (!isPublicStatus && !isOwnerOrAdmin) notFound();
   const isSaved = session?.user
     ? (await prisma.savedItem.count({ where: { userId: session.user.id, listingId: id } })) > 0
     : false;

@@ -6,7 +6,7 @@ interface BidHistoryProps {
     amount: number;
     createdAt: Date;
     bidderId: string;
-    bidder?: { name?: string | null; email?: string | null } | null;
+    bidder?: { name?: string | null } | null;
   }[];
   currentUserId?: string;
 }
@@ -26,7 +26,7 @@ export default function BidHistory({ bids, currentUserId }: BidHistoryProps) {
           <div className="py-3 flex justify-between items-center">
             <div>
               <span className="font-black">
-                {b.bidder?.name ?? b.bidder?.email ?? "Anonymous"}
+                {b.bidderId === currentUserId ? "You" : b.bidder?.name ?? "Anonymous bidder"}
               </span>
               {b.bidderId === currentUserId && (
                 <span className="ml-1 text-xs font-black text-acid">(you)</span>

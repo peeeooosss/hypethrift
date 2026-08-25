@@ -32,6 +32,7 @@ export interface Product {
   viewers: number;
   verified: boolean;
   hot: boolean;
+  featured: boolean;
 }
 
 export interface UIState {

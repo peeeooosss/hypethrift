@@ -59,8 +59,8 @@ export default function BiddingCard({ product }: { product: Product }) {
     <>
       <section className="relative max-w-7xl mx-auto pt-10 pb-10 px-4 text-center">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <div className="inline-block bg-ink text-acid px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-4 border-2 border-ink">
-            ⚡ Featured Drop · {category?.emoji} {category?.name}
+          <div className={`inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-4 border-2 border-ink ${product.featured ? "bg-ink text-acid" : "bg-white text-ink"}`}>
+            {product.featured ? "⚡ Featured Drop" : "Live Drop"} · {category?.emoji} {category?.name}
           </div>
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-black uppercase leading-[0.85] tracking-tighter mb-6">
             {product.name.split(" ")[0]}

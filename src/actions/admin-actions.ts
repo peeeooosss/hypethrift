@@ -158,11 +158,73 @@ export async function toggleFeatured(formData: FormData) {
   const listingId = formData.get("listingId")?.toString();
   if (!listingId) return;
 
-  const listing = await prisma.listing.findUnique({ where: { id: listingId }, select: { featured: true } });
+  const listing = await prisma.listing.findUnique({ where: { id: listingId }, select: { featured: true, featuredUntil: true } });
   if (!listing) return;
 
-  await prisma.listing.update({ where: { id: listingId }, data: { featured: !listing.featured } });
+  await prisma.listing.update({
+    where: { id: listingId },
+    data: listing.featured
+      ? { featured: false, featuredUntil: null }
+      : { featured: true, featuredUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
+  });
   revalidatePath("/admin/listings");
+  revalidatePath("/admin/featured");
+}
+
+const FEATURE_DURATION_DAYS = [1, 3, 7, 14, 30] as const;
+
+export async function featureListing(formData: FormData) {
+  await requireAdminOrThrow();
+  const listingId = formData.get("listingId")?.toString();
+  const days = Number(formData.get("days"));
+  const amount = Number(formData.get("amount"));
+  const note = formData.get("note")?.toString() || null;
+  if (!listingId || !FEATURE_DURATION_DAYS.includes(days as (typeof FEATURE_DURATION_DAYS)[number]) || isNaN(amount) || amount < 0) {
+    return { error: "Invalid feature input" };
+  }
+
+  const listing = await prisma.listing.findUnique({
+    where: { id: listingId },
+    select: { status: true, featuredUntil: true },
+  });
+  if (!listing || listing.status !== "ACTIVE") {
+    return { error: "Only active listings can be featured" };
+  }
+
+  const base = listing.featuredUntil && listing.featuredUntil > new Date()
+    ? listing.featuredUntil.getTime()
+    : Date.now();
+  const until = new Date(base + days * 24 * 60 * 60 * 1000);
+
+  await prisma.$transaction([
+    prisma.listing.update({
+      where: { id: listingId },
+      data: { featured: true, featuredUntil: until },
+    }),
+    ...(amount > 0
+      ? [prisma.featureCharge.create({ data: { listingId, amount, days, note } })]
+      : []),
+  ]);
+
+  revalidatePath("/admin/featured");
+  revalidatePath("/admin/listings");
+  revalidatePath("/");
+  revalidatePath("/listings");
+  return null;
+}
+
+export async function unfeatureListing(formData: FormData) {
+  await requireAdminOrThrow();
+  const listingId = formData.get("listingId")?.toString();
+  if (!listingId) return;
+
+  await prisma.listing.updateMany({
+    where: { id: listingId, featured: true },
+    data: { featured: false, featuredUntil: null },
+  });
+  revalidatePath("/admin/featured");
+  revalidatePath("/admin/listings");
+  revalidatePath("/");
 }
 
 export async function deleteListing(formData: FormData) {

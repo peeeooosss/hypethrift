@@ -7,10 +7,12 @@ const NAV = [
   { href: "/admin/users", label: "Users" },
   { href: "/admin/sellers", label: "Seller Apps" },
   { href: "/admin/listings", label: "Listings" },
+  { href: "/admin/featured", label: "Featured ⚡" },
   { href: "/admin/categories", label: "Categories" },
   { href: "/admin/orders", label: "Orders" },
   { href: "/admin/contact-fees", label: "Contact Fees" },
   { href: "/admin/credits", label: "Credits" },
+  { href: "/admin/payouts", label: "Payouts" },
   { href: "/admin/support", label: "Support" },
 ];
 

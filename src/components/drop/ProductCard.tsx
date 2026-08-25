@@ -39,12 +39,19 @@ export default function ProductCard({ product, onClick, index }: ProductCardProp
 
         {/* Top badges */}
         <div className="absolute top-2 left-2 right-2 flex justify-between items-start">
-          {product.hot && (
-            <div className="bg-bubblegum border-2 border-ink rounded-full px-2 py-0.5 flex items-center gap-1">
-              <span className="text-xs">🔥</span>
-              <span className="text-[9px] font-black uppercase text-white">HOT</span>
-            </div>
-          )}
+          <div className="flex flex-col gap-1 items-start">
+            {product.featured && (
+              <div className="bg-acid border-2 border-ink rounded-full px-2 py-0.5">
+                <span className="text-[9px] font-black uppercase text-ink">⚡ Featured</span>
+              </div>
+            )}
+            {product.hot && (
+              <div className="bg-bubblegum border-2 border-ink rounded-full px-2 py-0.5 flex items-center gap-1">
+                <span className="text-xs">🔥</span>
+                <span className="text-[9px] font-black uppercase text-white">HOT</span>
+              </div>
+            )}
+          </div>
           {product.verified && (
             <div className="bg-white border-2 border-ink rounded-full p-1">
               <BadgeCheckIcon size={14} />

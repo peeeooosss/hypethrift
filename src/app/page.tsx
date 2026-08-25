@@ -6,8 +6,9 @@ import type { Product } from "@/types";
 export const revalidate = 0;
 
 export default async function HomePage() {
+  const now = new Date();
   const listings = await prisma.listing.findMany({
-    where: { status: "ACTIVE", endsAt: { gt: new Date() } },
+    where: { status: "ACTIVE", endsAt: { gt: now } },
     orderBy: [{ featured: "desc" }, { hot: "desc" }, { endsAt: "asc" }],
     take: 24,
     include: { category: true },
@@ -25,6 +26,7 @@ export default async function HomePage() {
     viewers: listing.views,
     verified: listing.verified,
     hot: listing.hot,
+    featured: Boolean(listing.featuredUntil && listing.featuredUntil > now),
   }));
 
   return (

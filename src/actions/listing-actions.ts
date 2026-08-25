@@ -134,30 +134,53 @@ export async function placeBid(prevState: { error?: string; success?: boolean } 
 
   const listing = await prisma.listing.findUnique({
     where: { id: listingId },
+    select: { id: true, sellerId: true, status: true, endsAt: true, startingBid: true, currentBid: true, bidIncrement: true, reservePrice: true },
   });
   if (!listing) return { error: "Listing not found" };
   if (listing.sellerId === userId) return { error: "You cannot bid on your own listing" };
   if (listing.status !== "ACTIVE") return { error: "This auction is not active" };
   if (new Date(listing.endsAt) <= new Date()) return { error: "This auction has ended" };
 
-  const minimum = listing.currentBid ?? listing.startingBid;
+  const base = listing.currentBid ?? listing.startingBid;
+  const minimum = base + listing.bidIncrement;
   if (!Number.isInteger(amount) || amount < minimum) return { error: `Bid must be at least ₹${minimum}` };
   if (listing.reservePrice && amount < listing.reservePrice) {
     return { error: `Bid must meet the reserve price of ₹${listing.reservePrice}` };
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.bid.create({
-      data: { amount, listingId: listing.id, bidderId: userId },
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.bid.create({
+        data: { amount, listingId: listing.id, bidderId: userId },
+      });
+
+      // Atomic compare-and-set: only writes if the auction is still live and
+      // `amount` still beats the current bid by at least one increment.
+      const updated = await tx.$executeRaw`
+        UPDATE "Listing"
+        SET "currentBid" = ${amount}, "bidCount" = "bidCount" + 1, "updatedAt" = now()
+        WHERE "id" = ${listing.id}
+          AND "status" = 'ACTIVE'
+          AND "endsAt" > now()
+          AND (
+            ("currentBid" IS NOT NULL AND ${amount} >= "currentBid" + "bidIncrement")
+            OR ("currentBid" IS NULL AND ${amount} >= "startingBid" + "bidIncrement")
+          )
+      `;
+      if (updated !== 1) {
+        throw new Error("OUTBID_RACE");
+      }
     });
-    await tx.listing.update({
-      where: { id: listing.id },
-      data: { currentBid: amount, bidCount: { increment: 1 } },
-    });
-  });
+  } catch (error) {
+    if (error instanceof Error && error.message === "OUTBID_RACE") {
+      return { error: "You were outbid while placing your bid. Please bid again." };
+    }
+    return { error: "Could not place your bid. Please try again." };
+  }
 
   revalidatePath(`/listing/${listingId}`);
   revalidatePath(`/listing/${listingId}/bids`);
+  revalidatePath("/listings");
   revalidatePath("/");
   return { success: true, amount };
 }

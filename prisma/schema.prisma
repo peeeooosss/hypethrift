@@ -156,6 +156,7 @@ model Listing {
   condition     ListingCondition?
   status        ListingStatus @default(DRAFT)
   featured      Boolean       @default(false)
+  featuredUntil DateTime?
   verified      Boolean       @default(false)
   hot           Boolean       @default(false)
   endsAt        DateTime
@@ -167,9 +168,10 @@ model Listing {
 
    category Category @relation(fields: [categoryId], references: [id])
    seller   User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-   bids     Bid[]
-   order    Order?
-   savedItems SavedItem[]
+    bids     Bid[]
+    order    Order?
+    savedItems SavedItem[]
+    featureCharges FeatureCharge[]
 
    @@index([status])
    @@index([categoryId])
@@ -238,6 +240,19 @@ model Order {
   listing Listing @relation(fields: [listingId], references: [id])
   buyer   User    @relation("BuyerOrders", fields: [buyerId], references: [id])
   seller  User    @relation("SellerOrders", fields: [sellerId], references: [id])
+}
+
+model FeatureCharge {
+  id        String   @id @default(cuid())
+  listingId String
+  amount    Int
+  days      Int
+  note      String?
+  createdAt DateTime @default(now())
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
 }
 
 model Payout {
