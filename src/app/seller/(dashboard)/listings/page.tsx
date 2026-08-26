@@ -2,6 +2,9 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { deleteListing } from "@/actions/listing-actions";
+import { closeAuction } from "@/actions/auction-actions";
+
+export const revalidate = 0;
 
 export default async function SellerListingsPage() {
   const session = await auth();
@@ -9,6 +12,14 @@ export default async function SellerListingsPage() {
     prisma.listing.findMany({
       where: { sellerId: session!.user.id },
       orderBy: { createdAt: "desc" },
+      include: {
+        bids: {
+          orderBy: [{ amount: "desc" }, { createdAt: "asc" }],
+          take: 1,
+          include: { bidder: { select: { name: true, email: true } } },
+        },
+        order: { select: { id: true, status: true } },
+      },
     }),
     prisma.listing.count({ where: { sellerId: session!.user.id } }),
   ]);
@@ -62,6 +73,7 @@ export default async function SellerListingsPage() {
             <tbody>
               {listings.map((l) => {
                 const s = statusLabel[l.status as keyof typeof statusLabel] ?? statusLabel.DRAFT;
+                const topBid = l.bids[0];
                 return (
                   <tr key={l.id} className="border-b border-ink/10 last:border-0">
                     <td className="py-3">
@@ -78,7 +90,15 @@ export default async function SellerListingsPage() {
                             📦
                           </div>
                         )}
-                        <span className="font-black">{l.title}</span>
+                        <div>
+                          <span className="font-black">{l.title}</span>
+                          {topBid && (
+                            <p className="text-xs font-bold text-gray-500">
+                              Top bidder: {topBid.bidder.name ?? topBid.bidder.email}
+                              {topBid.bidder.email && topBid.bidder.name ? ` (${topBid.bidder.email})` : ""}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td className="py-3 text-sm font-black">₹{l.currentBid ?? l.startingBid}</td>
@@ -91,12 +111,31 @@ export default async function SellerListingsPage() {
                       {l.featured && <span className="ml-1 text-xs font-black">⭐</span>}
                     </td>
                     <td className="py-3 text-right space-x-1">
-                      {!["ENDED", "SOLD", "REJECTED"].includes(l.status) && l.bidCount === 0 && (
+                      {!["ENDED", "SOLD", "REJECTED"].includes(l.status) && (
                         <Link
                           href={`/seller/listings/${encodeURIComponent(l.id)}/edit`}
                           className="inline-block bg-acid border-2 border-ink px-2 py-1 rounded text-xs font-black hover:bg-bubblegum transition-colors"
                         >
                           Edit
+                        </Link>
+                      )}
+                      {l.status === "ACTIVE" && (
+                        <form action={closeAuction} className="inline">
+                          <input type="hidden" name="listingId" value={l.id} />
+                          <button
+                            type="submit"
+                            className="border-2 border-ink bg-white px-2 py-1 rounded text-xs font-black uppercase hover:bg-bubblegum transition-colors"
+                          >
+                            Close Bid
+                          </button>
+                        </form>
+                      )}
+                      {l.order && (
+                        <Link
+                          href="/seller/orders"
+                          className="inline-block border-2 border-ink px-2 py-1 rounded text-xs font-black uppercase hover:bg-acid transition-colors"
+                        >
+                          Order →
                         </Link>
                       )}
                       <form action={deleteListing} className="inline">

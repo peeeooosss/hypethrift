@@ -119,6 +119,76 @@ export async function createOrderFromListing(listingId: string, _formData?: Form
   redirect(`/account/bids/${encodeURIComponent(listingId)}/contact`);
 }
 
+/**
+ * Seller-initiated early close. Stops the auction immediately, then applies
+ * the same winner logic as the natural expiry: highest bid (earliest on tie)
+ * wins if it meets the reserve; otherwise the listing ends without a sale.
+ */
+export async function closeAuction(formData: FormData) {
+  const session = await auth();
+  if (!session?.user) redirect("/login");
+  if (!["SELLER", "ADMIN"].includes(session.user.role)) redirect("/account");
+  const listingId = formData.get("listingId")?.toString();
+  if (!listingId) return;
+
+  const listing = await prisma.listing.findUnique({
+    where: { id: listingId },
+    select: { sellerId: true, status: true },
+  });
+  if (!listing || listing.sellerId !== session.user.id) return;
+
+  // Atomic stop: only succeeds if the auction is still live, so no bid can
+  // land after this point (placeBid re-checks endsAt inside its transaction).
+  await prisma.listing.updateMany({
+    where: { id: listingId, status: "ACTIVE", endsAt: { gt: new Date() } },
+    data: { endsAt: new Date() },
+  });
+
+  const fresh = await prisma.listing.findUnique({
+    where: { id: listingId },
+    select: { status: true, reservePrice: true, sellerId: true },
+  });
+  if (!fresh || fresh.status !== "ACTIVE") {
+    revalidatePath("/seller/listings");
+    return;
+  }
+
+  await finalizeListing(listingId, fresh.sellerId, fresh.reservePrice);
+}
+
+async function finalizeListing(listingId: string, sellerId: string, reservePrice: number | null) {
+  const winningBid = await winnerForListing(listingId);
+  const meetsReserve = !reservePrice || (!!winningBid && winningBid.amount >= reservePrice);
+
+  if (winningBid && meetsReserve) {
+    const existingOrder = await prisma.order.findUnique({ where: { listingId }, select: { id: true } });
+    if (!existingOrder) {
+      await prisma.order.create({
+        data: {
+          listingId,
+          buyerId: winningBid.bidderId,
+          sellerId,
+          finalPrice: winningBid.amount,
+          platformFee: CONTACT_FEE,
+          paymentDeadline: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          status: "PENDING_CONTACT_FEE",
+        },
+      });
+    }
+    await prisma.listing.update({ where: { id: listingId }, data: { status: "SOLD" } });
+  } else {
+    await prisma.listing.update({ where: { id: listingId }, data: { status: "ENDED" } });
+  }
+
+  revalidatePath(`/listing/${listingId}`);
+  revalidatePath("/listings");
+  revalidatePath("/");
+  revalidatePath("/account/bids");
+  revalidatePath("/admin/orders");
+  revalidatePath("/admin/listings");
+  revalidatePath("/seller/listings");
+  revalidatePath("/seller/orders");
+}
 export async function processEndedAuctions() {
   const now = new Date();
   const endedListings = await prisma.listing.findMany({
@@ -128,34 +198,11 @@ export async function processEndedAuctions() {
   let ordersCreated = 0;
 
   for (const listing of endedListings) {
-    const winningBid = await winnerForListing(listing.id);
-    const meetsReserve = !listing.reservePrice || !!winningBid && winningBid.amount >= listing.reservePrice;
-
-    if (winningBid && meetsReserve) {
-      const existingOrder = await prisma.order.findUnique({ where: { listingId: listing.id }, select: { id: true } });
-      if (!existingOrder) {
-        await prisma.order.create({
-          data: {
-            listingId: listing.id,
-            buyerId: winningBid.bidderId,
-            sellerId: listing.sellerId,
-            finalPrice: winningBid.amount,
-            platformFee: CONTACT_FEE,
-            paymentDeadline: new Date(now.getTime() + 24 * 60 * 60 * 1000),
-            status: "PENDING_CONTACT_FEE",
-          },
-        });
-        ordersCreated++;
-      }
-      await prisma.listing.update({ where: { id: listing.id }, data: { status: "SOLD" } });
-    } else {
-      await prisma.listing.update({ where: { id: listing.id }, data: { status: "ENDED" } });
-    }
-
+    const ordersBefore = await prisma.order.count();
+    await finalizeListing(listing.id, listing.sellerId, listing.reservePrice);
+    const ordersAfter = await prisma.order.count();
+    if (ordersAfter > ordersBefore) ordersCreated++;
     auctionsEnded++;
-    revalidatePath(`/listing/${listing.id}`);
-    revalidatePath("/listings");
-    revalidatePath("/account/bids");
   }
 
   return { auctionsEnded, ordersCreated };

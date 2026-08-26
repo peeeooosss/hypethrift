@@ -45,7 +45,10 @@ export default async function SellerOrdersPage() {
                 </div>
 
                 {!unlocked ? (
-                  <p className="mt-5 bg-ink/5 border-2 border-dashed border-ink/20 rounded-xl p-4 text-sm font-bold text-gray-600">Buyer details stay hidden until the ₹69 contact fee is verified by admin.</p>
+                  <div className="mt-5 bg-ink/5 border-2 border-dashed border-ink/20 rounded-xl p-4 text-sm font-bold">
+                    <p className="text-gray-800">Winner: {order.buyer.name ?? "—"} <span className="text-gray-500">({order.buyer.email})</span></p>
+                    <p className="text-gray-600 mt-1">Phone, address, and WhatsApp contact unlock once the ₹69 contact fee is verified by admin.</p>
+                  </div>
                 ) : (
                   <div className="mt-5 grid lg:grid-cols-2 gap-5">
                     <div className="bg-ink/5 border-2 border-ink/20 rounded-2xl p-4">
