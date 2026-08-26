@@ -268,6 +268,7 @@ export async function submitContactFee(formData: FormData) {
       buyerPhone: parsed.data.phone,
       buyerAgreementAccepted: true,
       paidVia: parsed.data.paidVia,
+      proofUrl: formData.get("proofUrl")?.toString() || null,
       status: "WAITING_VERIFICATION",
     },
   });

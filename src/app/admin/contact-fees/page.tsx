@@ -26,6 +26,7 @@ export default async function AdminContactFeesPage() {
               <th className="pb-3 text-xs uppercase font-black text-gray-500">Buyer</th>
               <th className="pb-3 text-xs uppercase font-black text-gray-500">Item</th>
               <th className="pb-3 text-xs uppercase font-black text-gray-500">Fee / App</th>
+              <th className="pb-3 text-xs uppercase font-black text-gray-500">Proof</th>
               <th className="pb-3 text-xs uppercase font-black text-gray-500">Actions</th>
             </tr></thead>
             <tbody>{orders.map((order) => (
@@ -34,6 +35,15 @@ export default async function AdminContactFeesPage() {
                 <td className="py-3 text-sm">{order.buyer.name ?? order.buyer.email}</td>
                 <td className="py-3 text-sm font-black">{order.listing.title}</td>
                 <td className="py-3 text-sm font-black">₹{order.platformFee}<br /><span className="text-xs uppercase text-gray-500">{order.paidVia ?? "UPI"}</span></td>
+                <td className="py-3">
+                  {order.proofUrl ? (
+                    <a href={order.proofUrl} target="_blank" rel="noopener noreferrer">
+                      <img src={order.proofUrl} alt="Payment proof" className="w-12 h-12 rounded-lg border-2 border-ink object-cover hover:scale-110 transition-transform" />
+                    </a>
+                  ) : (
+                    <span className="text-xs text-gray-400 font-bold">No screenshot</span>
+                  )}
+                </td>
                 <td className="py-3 text-right space-x-2">
                   <form action={approveContactFee} className="inline"><input type="hidden" name="orderId" value={order.id} /><button className="bg-acid border-2 border-ink px-3 py-1 rounded-full text-xs font-black">Approve</button></form>
                   <form action={rejectContactFee} className="inline"><input type="hidden" name="orderId" value={order.id} /><button className="bg-bubblegum border-2 border-ink px-3 py-1 rounded-full text-xs font-black">Reject</button></form>

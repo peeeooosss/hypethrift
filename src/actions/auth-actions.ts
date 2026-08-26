@@ -1,10 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { signIn } from "@/lib/auth";
+import { auth, signIn } from "@/lib/auth";
 import { AuthError } from "next-auth";
 
 const loginSchema = z.object({
@@ -154,6 +155,54 @@ export async function sellerRegisterAction(_prevState: { error?: string } | null
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid seller details" };
 
   const email = parsed.data.email.toLowerCase();
+  const isReapply = formData.get("reapply") === "true";
+
+  // Check if this is a rejected seller re-applying
+  if (isReapply) {
+    const session = await auth();
+    if (session?.user?.role === "SELLER" && session.user.sellerStatus === "REJECTED") {
+      // Update existing account instead of creating new one
+      const hashed = await bcrypt.hash(parsed.data.password, 10);
+      await prisma.user.update({
+        where: { id: session.user.id },
+        data: {
+          name: parsed.data.name,
+          email,
+          password: hashed,
+          sellerStatus: "PENDING",
+          sellerNote: null,
+        },
+      });
+
+      await prisma.sellerProfile.upsert({
+        where: { userId: session.user.id },
+        update: {
+          storeName: parsed.data.storeName,
+          storeDescription: parsed.data.storeDescription ?? null,
+          location: parsed.data.location ?? null,
+          whatsappNumber: parsed.data.whatsappNumber,
+          returnPolicy: parsed.data.returnPolicy ?? null,
+          acceptedAgreement: true,
+          acceptedAt: new Date(),
+        },
+        create: {
+          userId: session.user.id,
+          storeName: parsed.data.storeName,
+          storeDescription: parsed.data.storeDescription ?? null,
+          location: parsed.data.location ?? null,
+          whatsappNumber: parsed.data.whatsappNumber,
+          returnPolicy: parsed.data.returnPolicy ?? null,
+          acceptedAgreement: true,
+          acceptedAt: new Date(),
+        },
+      });
+
+      revalidatePath("/admin/sellers");
+      revalidatePath("/seller/verification");
+      redirect("/seller/verification");
+    }
+  }
+
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) return { error: "An account with this email already exists. Use a different email for a seller account." };
 

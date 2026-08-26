@@ -6,6 +6,7 @@ import { submitContactFee } from "@/actions/auction-actions";
 import { BUYER_AGREEMENT } from "@/data/agreements";
 import { CONTACT_FEE, upiLinks } from "@/lib/platform";
 import AgreementSections from "@/components/legal/AgreementSections";
+import ProofUpload from "@/components/ui/ProofUpload";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -134,6 +135,9 @@ export default async function ContactWinnerPage({ params, searchParams }: {
               <option value="PhonePe">PhonePe</option>
               <option value="Google Pay">Google Pay</option>
             </select>
+            <div className="mt-4 p-4 bg-ink/5 border-2 border-ink/20 rounded-xl">
+              <ProofUpload onUploadComplete={() => {}} />
+            </div>
             <button className="w-full mt-4 bg-bubblegum border-2 border-ink shadow-brut-md py-4 rounded-2xl font-black uppercase text-lg hover:bg-acid transition-colors">I Have Paid — Send Screenshot</button>
             <p className="text-xs text-gray-500 font-bold mt-3">You will be redirected to WhatsApp. Send your payment screenshot there, then return to this page to see the verification status.</p>
           </div>

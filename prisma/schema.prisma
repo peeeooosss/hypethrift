@@ -228,6 +228,7 @@ model Order {
   buyerPhone      String?
   buyerAgreementAccepted Boolean @default(false)
   paidVia         String?
+  proofUrl        String?
   contactFeeConfirmed Boolean @default(false)
   paymentDeadline DateTime?
   itemPaymentDeadline DateTime?

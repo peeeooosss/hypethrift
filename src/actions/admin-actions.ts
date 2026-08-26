@@ -310,11 +310,30 @@ export async function deleteSupportTicket(formData: FormData) {
 // ---------------------------------------------------------------------------
 const orderStatusSchema = z.enum(["PENDING_CONTACT_FEE", "WAITING_VERIFICATION", "CONTACT_FEE_PAID", "COMPLETED", "REJECTED", "CANCELLED"]);
 
+type OrderStatus = z.infer<typeof orderStatusSchema>;
+
+const VALID_ORDER_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
+  PENDING_CONTACT_FEE: ["WAITING_VERIFICATION", "CANCELLED"],
+  WAITING_VERIFICATION: ["CONTACT_FEE_PAID", "REJECTED", "CANCELLED"],
+  CONTACT_FEE_PAID: ["COMPLETED", "CANCELLED"],
+  COMPLETED: [],
+  REJECTED: ["PENDING_CONTACT_FEE", "CANCELLED"],
+  CANCELLED: [],
+};
+
 export async function updateOrderStatus(formData: FormData) {
   await requireAdminOrThrow();
   const orderId = formData.get("orderId")?.toString();
   const parsedStatus = orderStatusSchema.safeParse(formData.get("status")?.toString());
   if (!orderId || !parsedStatus.success) return;
+
+  const order = await prisma.order.findUnique({ where: { id: orderId }, select: { status: true } });
+  if (!order) return;
+
+  const allowed = VALID_ORDER_TRANSITIONS[order.status as OrderStatus] ?? [];
+  if (!allowed.includes(parsedStatus.data)) {
+    redirect(`/admin/orders?error=invalid_transition&orderId=${orderId}`);
+  }
 
   await prisma.order.update({
     where: { id: orderId },
@@ -324,10 +343,15 @@ export async function updateOrderStatus(formData: FormData) {
         contactFeeConfirmed: true,
         itemPaymentDeadline: new Date(Date.now() + ITEM_PAYMENT_WINDOW_HOURS * 60 * 60 * 1000),
       } : {}),
+      ...(parsedStatus.data === "COMPLETED" ? {
+        buyerConfirmedAt: new Date(),
+      } : {}),
     },
   });
   revalidatePath("/admin/orders");
+  revalidatePath("/admin/contact-fees");
   revalidatePath(`/account/orders/${orderId}`);
+  revalidatePath("/seller/orders");
 }
 
 // ---------------------------------------------------------------------------

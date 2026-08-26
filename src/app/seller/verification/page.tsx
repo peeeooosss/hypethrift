@@ -34,7 +34,7 @@ export default async function SellerVerificationPage() {
       )}
       {isRejected && (
         <Link
-          href="/seller/register"
+          href="/seller/register?reapply=true"
           className="inline-block bg-bubblegum text-ink font-black uppercase px-6 py-3 rounded-full border-2 border-ink shadow-brut-md hover:bg-acid hover:text-ink transition-colors"
         >
           Re-apply as Seller

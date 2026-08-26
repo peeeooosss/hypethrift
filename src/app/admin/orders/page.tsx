@@ -45,9 +45,10 @@ type OrderWithDetails = {
 export default async function AdminOrdersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; error?: string; orderId?: string }>;
 }) {
-  const statusFilter = (await searchParams).status;
+  const params = await searchParams;
+  const statusFilter = params.status;
 
   const orders = await prisma.order.findMany({
     where: statusFilter ? { status: statusFilter as OrderStatus } : undefined,
@@ -69,6 +70,12 @@ export default async function AdminOrdersPage({
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-black uppercase text-white">Orders</h1>
       </div>
+
+      {params.error === "invalid_transition" && (
+        <div className="bg-red-500 text-white border-2 border-ink rounded-2xl px-5 py-3 font-black text-sm">
+          Invalid status transition. That order cannot move directly to the selected status.
+        </div>
+      )}
 
       <div className="flex gap-2 overflow-x-auto">
         <a
