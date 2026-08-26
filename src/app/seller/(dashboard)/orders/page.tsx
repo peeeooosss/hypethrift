@@ -16,7 +16,21 @@ const LABELS: Record<string, string> = {
   CANCELLED: "Cancelled",
 };
 
-export default async function SellerOrdersPage() {
+const BANNERS: Record<string, { type: "success" | "error"; text: string }> = {
+  details: { type: "success", text: "Order details saved. The buyer can now see the tracking and courier info on their order page." },
+  handoff: { type: "success", text: "Handoff marked ready. The buyer will be asked to confirm receipt to complete the order." },
+  save_failed: { type: "error", text: "Could not save order details. Please try again." },
+  not_verified: { type: "error", text: "Buyer contact fee is not verified yet, so details cannot be saved." },
+  payment_not_confirmed: { type: "error", text: "Tick 'Buyer paid me for the item' and save before marking handoff ready." },
+  not_ready: { type: "error", text: "This order is not in a state that allows that action." },
+};
+
+export default async function SellerOrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ saved?: string; error?: string }>;
+}) {
+  const { saved, error } = await searchParams;
   const session = await auth();
   if (!session?.user) redirect("/login");
   if (session.user.role !== "SELLER" && session.user.role !== "ADMIN") redirect("/account");
@@ -30,6 +44,21 @@ export default async function SellerOrdersPage() {
   return (
     <div className="space-y-8">
       <div><h1 className="text-3xl font-black uppercase">Closed Bids</h1><p className="text-gray-500 font-bold mt-2">Manage buyer contact, payment, and completion for each winning bid.</p></div>
+
+      {(saved || error) && (() => {
+        const banner = BANNERS[error ?? saved ?? ""];
+        if (!banner) return null;
+        return (
+          <p className={`text-sm font-black rounded-2xl border-2 px-4 py-3 ${
+            banner.type === "success"
+              ? "bg-acid/40 border-acid text-ink"
+              : "bg-red-50 border-red-300 text-red-700"
+          }`}>
+            {banner.text}
+          </p>
+        );
+      })()}
+
       {orders.length === 0 ? (
         <div className="bg-white border-2 border-ink shadow-brut-lg rounded-2xl p-8 text-center"><p className="text-gray-500 font-bold">No closed bids yet.</p></div>
       ) : (

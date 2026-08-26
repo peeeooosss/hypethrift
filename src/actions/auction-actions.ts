@@ -388,10 +388,12 @@ async function sellerOrder(orderId: string) {
 
 export async function updateSellerOrderDetails(formData: FormData) {
   const orderId = formData.get("orderId")?.toString();
-  if (!orderId) return;
+  if (!orderId) redirect("/seller/orders?error=save_failed");
   const result = await sellerOrder(orderId);
-  if (!result) return { error: "Unauthorized" };
-  if (!(["CONTACT_FEE_PAID", "COMPLETED"] as string[]).includes(result.order.status)) return { error: "Buyer contact fee is not verified" };
+  if (!result) redirect("/seller/orders?error=save_failed");
+  if (!(["CONTACT_FEE_PAID", "COMPLETED"] as string[]).includes(result.order.status)) {
+    redirect("/seller/orders?error=not_verified");
+  }
   const current = result.order.sellerOrderDetails && typeof result.order.sellerOrderDetails === "object" ? result.order.sellerOrderDetails as Record<string, unknown> : {};
   await prisma.order.update({
     where: { id: orderId },
@@ -408,15 +410,20 @@ export async function updateSellerOrderDetails(formData: FormData) {
   revalidatePath("/seller/orders");
   revalidatePath(`/account/orders/${orderId}`);
   revalidatePath("/account/orders");
+  redirect(`/seller/orders?saved=details`);
 }
 
 export async function markOrderCompleted(formData: FormData) {
   const orderId = formData.get("orderId")?.toString();
   if (!orderId) return;
   const result = await sellerOrder(orderId);
-  if (!result || result.order.status !== "CONTACT_FEE_PAID") return { error: "Order is not ready to complete" };
+  if (!result || result.order.status !== "CONTACT_FEE_PAID") {
+    redirect("/seller/orders?error=not_ready");
+  }
   const current = result.order.sellerOrderDetails && typeof result.order.sellerOrderDetails === "object" ? result.order.sellerOrderDetails as Record<string, unknown> : {};
-  if (current.sellerPaymentReceived !== true) return { error: "Confirm that the buyer paid for the item first" };
+  if (current.sellerPaymentReceived !== true) {
+    redirect("/seller/orders?error=payment_not_confirmed");
+  }
   await prisma.order.update({
     where: { id: orderId },
     data: {
@@ -428,6 +435,7 @@ export async function markOrderCompleted(formData: FormData) {
   revalidatePath("/seller/orders");
   revalidatePath(`/account/orders/${orderId}`);
   revalidatePath("/account/orders");
+  redirect("/seller/orders?saved=handoff");
 }
 
 export async function reportBuyerNoPayment(formData: FormData) {
