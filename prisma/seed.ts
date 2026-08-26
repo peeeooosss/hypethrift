@@ -60,23 +60,23 @@ const BUYERS = [
 ];
 
 const LIVE_LISTINGS = [
-  { id: "seed-Jordan 1 Chicago (2015)", title: "Jordan 1 Chicago (2015)", sellerKey: "archive", categorySlug: "sneakers", startingBid: 18500, currentBid: 19600, condition: "EXCELLENT", size: "UK 9.5", verified: true, hot: true, bidCount: 42, views: 128, watchers: 18 },
-  { id: "seed-Yeezy 350 Zebra", title: "Yeezy 350 Zebra", sellerKey: "archive", categorySlug: "sneakers", startingBid: 12400, currentBid: 13800, condition: "GOOD", size: "UK 8.5", verified: true, hot: false, bidCount: 28, views: 89, watchers: 11 },
-  { id: "seed-Dunk Low Panda", title: "Dunk Low Panda", sellerKey: "streetvault", categorySlug: "sneakers", startingBid: 8200, currentBid: 9700, condition: "EXCELLENT", size: "UK 9", verified: false, hot: true, bidCount: 56, views: 210, watchers: 26 },
-  { id: "seed-Supreme Box Logo Tee", title: "Supreme Box Logo Tee", sellerKey: "streetvault", categorySlug: "streetwear", startingBid: 5600, currentBid: 7100, condition: "LIKE_NEW", size: "L", verified: true, hot: true, bidCount: 34, views: 156, watchers: 20 },
-  { id: "seed-North Face Nuptse 1996", title: "North Face Nuptse 1996", sellerKey: "closet", categorySlug: "outerwear", startingBid: 8900, currentBid: 10500, condition: "EXCELLENT", size: "XL", verified: true, hot: true, bidCount: 47, views: 201, watchers: 24 },
-  { id: "seed-Vintage Coach Shoulder Bag", title: "Vintage Coach Shoulder Bag", sellerKey: "closet", categorySlug: "bags", startingBid: 6400, currentBid: 7800, condition: "GOOD", size: "One Size", verified: true, hot: false, bidCount: 19, views: 74, watchers: 8 },
+  { id: "seed-Jordan 1 Chicago (2015)", images: ["https://ee7oisanmz.ufs.sh/f/NGE5n6g03KsUpJhBJgv1XCluO2W14MIgGbH07tQ63idAYz5v"], title: "Jordan 1 Chicago (2015)", sellerKey: "archive", categorySlug: "sneakers", startingBid: 18500, currentBid: 19600, condition: "EXCELLENT", size: "UK 9.5", verified: true, hot: true, bidCount: 42, views: 128, watchers: 18 },
+  { id: "seed-Yeezy 350 Zebra", images: ["https://ee7oisanmz.ufs.sh/f/NGE5n6g03KsUHA44cQGNqrYIPGpuoTSHebvticB5lEDOR306"], title: "Yeezy 350 Zebra", sellerKey: "archive", categorySlug: "sneakers", startingBid: 12400, currentBid: 13800, condition: "GOOD", size: "UK 8.5", verified: true, hot: false, bidCount: 28, views: 89, watchers: 11 },
+  { id: "seed-Dunk Low Panda", images: ["https://ee7oisanmz.ufs.sh/f/NGE5n6g03KsUCYdWbxz8gyBb9VZjOYE1Ql7u30dt4pqm2ScG"], title: "Dunk Low Panda", sellerKey: "streetvault", categorySlug: "sneakers", startingBid: 8200, currentBid: 9700, condition: "EXCELLENT", size: "UK 9", verified: false, hot: true, bidCount: 56, views: 210, watchers: 26 },
+  { id: "seed-Supreme Box Logo Tee", images: ["https://ee7oisanmz.ufs.sh/f/NGE5n6g03KsUDdi4zxEy2bS5eRWUXOQiv7ckpJoCzN60PuaK"], title: "Supreme Box Logo Tee", sellerKey: "streetvault", categorySlug: "streetwear", startingBid: 5600, currentBid: 7100, condition: "LIKE_NEW", size: "L", verified: true, hot: true, bidCount: 34, views: 156, watchers: 20 },
+  { id: "seed-North Face Nuptse 1996", images: ["https://ee7oisanmz.ufs.sh/f/NGE5n6g03KsUfGCc5Em8NdCeh1i0TzyU76Z4SLBtP9ODQmjc"], title: "North Face Nuptse 1996", sellerKey: "closet", categorySlug: "outerwear", startingBid: 8900, currentBid: 10500, condition: "EXCELLENT", size: "XL", verified: true, hot: true, bidCount: 47, views: 201, watchers: 24 },
+  { id: "seed-Vintage Coach Shoulder Bag", images: ["https://ee7oisanmz.ufs.sh/f/NGE5n6g03KsUTekyrxPH1DZegGoJyp3AI20LPlERFhB4X98K"], title: "Vintage Coach Shoulder Bag", sellerKey: "closet", categorySlug: "bags", startingBid: 6400, currentBid: 7800, condition: "GOOD", size: "One Size", verified: true, hot: false, bidCount: 19, views: 74, watchers: 8 },
 ];
 
 const REVIEW_LISTINGS = [
-  { id: "seed-Vintage Fendi Baguette", title: "Vintage Fendi Baguette", sellerKey: "archive", categorySlug: "bags", startingBid: 12800, currentBid: 12800, condition: "GOOD", size: "One Size", verified: true, hot: true, bidCount: 0, views: 234, watchers: 0 },
-  { id: "seed-Chrome Hearts Ring", title: "Chrome Hearts Ring", sellerKey: "streetvault", categorySlug: "jewelry", startingBid: 7500, currentBid: 7500, condition: "NEW", size: "One Size", verified: true, hot: false, bidCount: 0, views: 112, watchers: 0 },
+  { id: "seed-Vintage Fendi Baguette", images: ["https://ee7oisanmz.ufs.sh/f/NGE5n6g03KsUXQhjMnyp3uBVe8midP79oGMXA2RkHJF6xfrb"], title: "Vintage Fendi Baguette", sellerKey: "archive", categorySlug: "bags", startingBid: 12800, currentBid: 12800, condition: "GOOD", size: "One Size", verified: true, hot: true, bidCount: 0, views: 234, watchers: 0 },
+  { id: "seed-Chrome Hearts Ring", images: ["https://ee7oisanmz.ufs.sh/f/NGE5n6g03KsUVFHnF5t5cXpRtHoLiayrT8h2sgnuQzSBAExm"], title: "Chrome Hearts Ring", sellerKey: "streetvault", categorySlug: "jewelry", startingBid: 7500, currentBid: 7500, condition: "NEW", size: "One Size", verified: true, hot: false, bidCount: 0, views: 112, watchers: 0 },
 ];
 
 const PAST_LISTINGS = [
-  { id: "seed-past-Levi's 501 Big E", title: "Levi's 501 Big E", sellerKey: "closet", categorySlug: "denim", startingBid: 4800, currentBid: 6100, condition: "GOOD", size: "W32 L32", status: "ENDED" },
-  { id: "seed-past-Louis Vuitton Pochette", title: "Louis Vuitton Pochette", sellerKey: "closet", categorySlug: "bags", startingBid: 12500, currentBid: 15800, condition: "EXCELLENT", size: "One Size", status: "SOLD" },
-  { id: "seed-past-Varsity Jacket", title: "90s Varsity Jacket", sellerKey: "streetvault", categorySlug: "outerwear", startingBid: 5200, currentBid: 6800, condition: "GOOD", size: "M", status: "SOLD" },
+  { id: "seed-past-Levi's 501 Big E", images: ["https://ee7oisanmz.ufs.sh/f/NGE5n6g03KsUiy7z6YCMrFu9bqTDdLX7BnyU1s3xI8aAep2R"], title: "Levi's 501 Big E", sellerKey: "closet", categorySlug: "denim", startingBid: 4800, currentBid: 6100, condition: "GOOD", size: "W32 L32", status: "ENDED" },
+  { id: "seed-past-Louis Vuitton Pochette", images: ["https://ee7oisanmz.ufs.sh/f/NGE5n6g03KsUrKksdhAYclFGm5PBtHi7oeZhU2VQk14Epyvd"], title: "Louis Vuitton Pochette", sellerKey: "closet", categorySlug: "bags", startingBid: 12500, currentBid: 15800, condition: "EXCELLENT", size: "One Size", status: "SOLD" },
+  { id: "seed-past-Varsity Jacket", images: ["https://ee7oisanmz.ufs.sh/f/NGE5n6g03KsU1b0Q60lXpgPteoYNzChD2jZMVkLKv63ysnS4"], title: "90s Varsity Jacket", sellerKey: "streetvault", categorySlug: "outerwear", startingBid: 5200, currentBid: 6800, condition: "GOOD", size: "M", status: "SOLD" },
 ];
 
 type DemoBid = readonly [id: string, listingId: string, buyerKey: string, amount: number];
@@ -141,6 +141,7 @@ async function upsertListing(
     views?: number;
     watchers?: number;
     status?: string;
+    images?: string[];
   },
   sellers: Record<string, { id: string }>,
   endsAt: Date,
@@ -149,6 +150,7 @@ async function upsertListing(
     where: { id: listing.id },
     update: {
       title: listing.title,
+      ...(listing.images?.length ? { images: [...listing.images] } : {}),
       seller: { connect: { id: sellers[listing.sellerKey].id } },
       category: { connect: { slug: listing.categorySlug } },
       startingBid: listing.startingBid,
@@ -166,10 +168,10 @@ async function upsertListing(
     create: {
       id: listing.id,
       title: listing.title,
+      images: listing.images ?? [],
       description: "Premium vintage piece, fully authenticated for demo purposes.",
       category: { connect: { slug: listing.categorySlug } },
       seller: { connect: { id: sellers[listing.sellerKey].id } },
-      images: [],
       startingBid: listing.startingBid,
       currentBid: listing.currentBid,
       bidIncrement: 50,
