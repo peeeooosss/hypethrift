@@ -20,6 +20,7 @@ export default async function HomePage() {
     name: listing.title,
     emoji: listing.category.emoji,
     bg: listing.category.color,
+    image: listing.images[0] ?? null,
     bid: listing.currentBid ?? listing.startingBid,
     time: Math.max(0, Math.floor((listing.endsAt.getTime() - Date.now()) / 1000)),
     bids: listing.bidCount,

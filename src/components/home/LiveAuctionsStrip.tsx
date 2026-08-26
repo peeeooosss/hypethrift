@@ -56,7 +56,14 @@ export default async function LiveAuctionsStrip() {
                 </div>
               )}
               <Link href={href} className="group">
-                <div className="flex-1 flex items-center justify-center text-4xl mb-3">{l.category.emoji}</div>
+                <div className="flex-1 flex items-center justify-center text-4xl mb-3 overflow-hidden rounded-2xl">
+                  {l.images?.[0] ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={l.images[0]} alt={l.title} className="w-full h-full object-cover aspect-square" />
+                  ) : (
+                    l.category.emoji
+                  )}
+                </div>
                 <h3 className="font-black text-sm uppercase text-center mb-2 line-clamp-2">{l.title}</h3>
                 <div className="text-center">
                   <span className="font-black text-lg block">{money(l.currentBid ?? l.startingBid)}</span>

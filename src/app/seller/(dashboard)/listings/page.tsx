@@ -90,7 +90,15 @@ export default async function SellerListingsPage() {
                       </span>
                       {l.featured && <span className="ml-1 text-xs font-black">⭐</span>}
                     </td>
-                    <td className="py-3 text-right">
+                    <td className="py-3 text-right space-x-1">
+                      {!["ENDED", "SOLD", "REJECTED"].includes(l.status) && l.bidCount === 0 && (
+                        <Link
+                          href={`/seller/listings/${encodeURIComponent(l.id)}/edit`}
+                          className="inline-block bg-acid border-2 border-ink px-2 py-1 rounded text-xs font-black hover:bg-bubblegum transition-colors"
+                        >
+                          Edit
+                        </Link>
+                      )}
                       <form action={deleteListing} className="inline">
                         <input type="hidden" name="listingId" value={l.id} />
                         <button

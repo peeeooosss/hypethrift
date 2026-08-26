@@ -26,6 +26,7 @@ export interface Product {
   name: string;
   emoji: string;
   bg: string;
+  image?: string | null;
   bid: number;
   time: number;
   bids: number;

@@ -81,7 +81,12 @@ export default function BiddingCard({ product }: { product: Product }) {
             className="relative z-10 w-56 h-56 md:w-80 md:h-80 border-2 border-ink rounded-[2rem] shadow-brut-xl flex items-center justify-center overflow-hidden"
             style={{ backgroundColor: product.bg }}
           >
-            <div className="text-8xl md:text-9xl opacity-80 select-none">{product.emoji}</div>
+            {product.image ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img src={product.image} alt={product.name} className="absolute inset-0 w-full h-full object-cover" />
+            ) : (
+              <div className="text-8xl md:text-9xl opacity-80 select-none">{product.emoji}</div>
+            )}
           </motion.div>
 
           {product.hot && (

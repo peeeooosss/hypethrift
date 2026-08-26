@@ -75,9 +75,22 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
         <div className="bg-white border-2 border-ink shadow-brut-2xl rounded-3xl p-6">
           <div className="relative">
             {listing.images.length > 0 ? (
-              <div className="aspect-[4/3] rounded-2xl border-2 border-ink overflow-hidden mb-4">
-                <img src={listing.images[0]} alt={listing.title} className="w-full h-full object-cover" />
-              </div>
+              <>
+                <div className="aspect-[4/3] rounded-2xl border-2 border-ink overflow-hidden mb-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={listing.images[0]} alt={listing.title} className="w-full h-full object-cover" />
+                </div>
+                {listing.images.length > 1 && (
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {listing.images.slice(1).map((src, i) => (
+                      <div key={src + i} className="w-16 h-16 rounded-xl border-2 border-ink overflow-hidden">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={src} alt={`${listing.title} photo ${i + 2}`} className="w-full h-full object-cover" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
             ) : (
               <div className="aspect-[4/3] rounded-2xl border-2 border-dashed border-ink/30 bg-gray-50 flex items-center justify-center text-6xl mb-4">
                 📦
@@ -131,8 +144,14 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
           </div>
 
           {listing.reservePrice && (
-            <p className="text-xs font-bold bg-acid/20 border-2 border-acid rounded-xl py-2 px-3 mb-4">
-              Reserve: {money(listing.reservePrice)}
+            <p className={`text-xs font-bold rounded-xl py-2 px-3 mb-4 border-2 ${
+              currentBid >= listing.reservePrice
+                ? "bg-acid/20 border-acid"
+                : "bg-bubblegum/20 border-bubblegum"
+            }`}>
+              {currentBid >= listing.reservePrice
+                ? `Reserve met ✓ (₹${listing.reservePrice.toLocaleString("en-IN")})`
+                : `Reserve not met — needs ₹${listing.reservePrice.toLocaleString("en-IN")} to sell`}
             </p>
           )}
 

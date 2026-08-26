@@ -35,7 +35,12 @@ export default function ProductCard({ product, onClick, index }: ProductCardProp
     >
       {/* Image */}
       <div className="relative aspect-square flex items-center justify-center overflow-hidden" style={{ backgroundColor: product.bg }}>
-        <div className="text-7xl md:text-8xl group-hover:scale-110 transition-transform duration-300">{product.emoji}</div>
+        {product.image ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img src={product.image} alt={product.name} className="absolute inset-0 w-full h-full object-cover" />
+        ) : (
+          <div className="text-7xl md:text-8xl group-hover:scale-110 transition-transform duration-300">{product.emoji}</div>
+        )}
 
         {/* Top badges */}
         <div className="absolute top-2 left-2 right-2 flex justify-between items-start">

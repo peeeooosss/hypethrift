@@ -84,6 +84,10 @@ export async function createListing(prevState: { error?: string; success?: boole
      action,
    } = parsed.data;
 
+  if (reservePrice !== undefined && reservePrice < startingBid) {
+    return { error: "Reserve price must be higher than the starting bid" };
+  }
+
    const category = await prisma.category.findUnique({ where: { id: categoryId }, select: { slug: true } });
    if (!category) return { error: "Invalid category" };
    if (!sizeIsValidForCategory(size, category.slug)) {
@@ -128,6 +132,92 @@ export async function deleteListing(formData: FormData) {
    revalidatePath("/seller/listings");
 }
 
+const editListingSchema = z.object({
+  title: z.string().min(3, "Title must be at least 3 characters"),
+  description: z.string().min(10, "Description is too short"),
+  categoryId: z.string().min(1, "Select a category"),
+  startingBid: z.coerce.number().int().min(1, "Starting bid is required"),
+  reservePrice: z.coerce.number().int().optional().or(z.literal("").transform(() => undefined)),
+  size: z.string().min(1, "Select a size"),
+  condition: z.enum(["NEW", "LIKE_NEW", "EXCELLENT", "GOOD", "FAIR"]).optional(),
+});
+
+export async function updateListing(prevState: { error?: string; success?: boolean } | null, formData: FormData) {
+  const seller = await requireSeller();
+  if (!seller) return { error: "Unauthorized" };
+  const listingId = formData.get("listingId")?.toString();
+  if (!listingId) return { error: "Missing listing id" };
+
+  const existing = await prisma.listing.findUnique({
+    where: { id: listingId },
+    select: { id: true, sellerId: true, status: true, bidCount: true, endsAt: true },
+  });
+  if (!existing || existing.sellerId !== seller.id) return { error: "Listing not found" };
+  if (existing.bidCount > 0) return { error: "This auction already has bids. Listing details are locked." };
+  if (!["DRAFT", "PENDING_REVIEW", "ACTIVE"].includes(existing.status)) {
+    return { error: "This listing can no longer be edited" };
+  }
+
+  const rawImages = formData.get("images")?.toString() ?? "";
+  const images = rawImages ? rawImages.split(",").map((s) => s.trim()).filter(Boolean) : [];
+  if (images.length === 0) return { error: "Upload at least one image" };
+  if (images.length > 8) return { error: "Maximum of 8 images allowed" };
+  const allowedHost = (url: string) => {
+    try {
+      const host = new URL(url).hostname;
+      return host.endsWith(".utfs.io") || host === "utfs.io" || host.endsWith(".ufs.sh") || host === "ufs.sh";
+    } catch {
+      return false;
+    }
+  };
+  if (!images.every(allowedHost)) return { error: "One or more image URLs are invalid. Please re-upload." };
+
+  const parsed = editListingSchema.safeParse({
+    title: formData.get("title"),
+    description: formData.get("description"),
+    categoryId: formData.get("categoryId"),
+    startingBid: formData.get("startingBid"),
+    reservePrice: formData.get("reservePrice"),
+    size: formData.get("size"),
+    condition: formData.get("condition"),
+  });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
+
+  const { title, description, categoryId, startingBid, reservePrice, size, condition } = parsed.data;
+  if (reservePrice !== undefined && reservePrice < startingBid) {
+    return { error: "Reserve price must be higher than the starting bid" };
+  }
+
+  const category = await prisma.category.findUnique({ where: { id: categoryId }, select: { slug: true } });
+  if (!category) return { error: "Invalid category" };
+  if (!sizeIsValidForCategory(size, category.slug)) {
+    return { error: "Please select a valid size for this category" };
+  }
+
+  await prisma.listing.update({
+    where: { id: listingId },
+    data: {
+      title,
+      description,
+      category: { connect: { id: categoryId } },
+      images,
+      startingBid,
+      // Reserve is only enforced at auction completion; clear it when blanked.
+      reservePrice: reservePrice ?? null,
+      size,
+      condition: condition ? (condition as ListingConditionType) : null,
+      // Editing a live listing with no bids resets its clock so buyers see a
+      // fair auction; draft/pending listings keep their original schedule.
+      ...(existing.status === "ACTIVE" ? { endsAt: new Date(Date.now() + 24 * 60 * 60 * 1000) } : {}),
+    },
+  });
+
+  revalidatePath("/seller/listings");
+  revalidatePath(`/listing/${listingId}`);
+  revalidatePath("/");
+  return { success: true };
+}
+
 async function requireBuyer() {
   const session = await auth();
   if (!session?.user) redirect("/login");
@@ -157,9 +247,8 @@ export async function placeBid(prevState: { error?: string; success?: boolean } 
   const base = listing.currentBid ?? listing.startingBid;
   const minimum = base + listing.bidIncrement;
   if (!Number.isInteger(amount) || amount < minimum) return { error: `Bid must be at least ₹${minimum}` };
-  if (listing.reservePrice && amount < listing.reservePrice) {
-    return { error: `Bid must meet the reserve price of ₹${listing.reservePrice}` };
-  }
+  // Standard reserve behaviour: bids below the reserve are accepted while the
+  // auction is live; the reserve is only enforced when deciding the winner.
 
   try {
     await prisma.$transaction(async (tx) => {
