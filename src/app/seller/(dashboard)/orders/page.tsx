@@ -60,7 +60,7 @@ export default async function SellerOrdersPage() {
                     </div>
                     <div className="bg-ink/5 border-2 border-ink/20 rounded-2xl p-4">
                       <h2 className="font-black uppercase text-sm mb-3">Seller update</h2>
-                      <form action={async (formData: FormData) => { await updateSellerOrderDetails(formData); }} className="space-y-2">
+                      <form action={async (formData: FormData) => { "use server"; await updateSellerOrderDetails(formData); }} className="space-y-2">
                         <input type="hidden" name="orderId" value={order.id} />
                         <input name="trackingNumber" defaultValue={String(details.trackingNumber ?? "")} placeholder="Tracking number (optional)" className="w-full border-2 border-ink rounded-xl px-3 py-2 text-sm font-bold" />
                         <input name="courier" defaultValue={String(details.courier ?? "")} placeholder="Courier / delivery method" className="w-full border-2 border-ink rounded-xl px-3 py-2 text-sm font-bold" />
@@ -76,8 +76,8 @@ export default async function SellerOrdersPage() {
                    {order.itemPaymentDeadline && <div className="flex flex-wrap items-center justify-between gap-3 bg-bubblegum/20 border-2 border-bubblegum rounded-xl p-3"><span className="text-xs font-black uppercase">Item payment deadline</span><CountdownTimer deadline={order.itemPaymentDeadline} compact /></div>}
                    {!order.sellerMarkedReadyAt && <p className="text-xs font-bold text-gray-500">Save the buyer payment confirmation above, then mark the handoff ready. The buyer can complete the order after confirming receipt.</p>}
                    <div className="flex flex-wrap gap-2">
-                     <form action={async (formData: FormData) => { await markOrderCompleted(formData); }}><input type="hidden" name="orderId" value={order.id} /><button className="bg-acid border-2 border-ink px-4 py-2 rounded-full text-xs font-black uppercase hover:bg-bubblegum">{order.sellerMarkedReadyAt ? "Update handoff ready" : "Mark handoff ready"}</button></form>
-                     <form action={async (formData: FormData) => { await reportBuyerNoPayment(formData); }}><input type="hidden" name="orderId" value={order.id} /><button className="border-2 border-bubblegum px-4 py-2 rounded-full text-xs font-black uppercase hover:bg-bubblegum">Buyer did not pay</button></form>
+                     <form action={async (formData: FormData) => { "use server"; await markOrderCompleted(formData); }}><input type="hidden" name="orderId" value={order.id} /><button className="bg-acid border-2 border-ink px-4 py-2 rounded-full text-xs font-black uppercase hover:bg-bubblegum">{order.sellerMarkedReadyAt ? "Update handoff ready" : "Mark handoff ready"}</button></form>
+                     <form action={async (formData: FormData) => { "use server"; await reportBuyerNoPayment(formData); }}><input type="hidden" name="orderId" value={order.id} /><button className="border-2 border-bubblegum px-4 py-2 rounded-full text-xs font-black uppercase hover:bg-bubblegum">Buyer did not pay</button></form>
                    </div>
                  </div>}
               </article>

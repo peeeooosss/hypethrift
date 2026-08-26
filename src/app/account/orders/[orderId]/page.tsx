@@ -142,7 +142,7 @@ export default async function AccountOrderStatusPage({ params, searchParams }: {
             </div>
           )}
           {order.sellerMarkedReadyAt ? (
-            <form action={async (formData: FormData) => { await confirmOrderReceived(formData); }}>
+            <form action={async (formData: FormData) => { "use server"; await confirmOrderReceived(formData); }}>
               <input type="hidden" name="orderId" value={order.id} />
               <button className="w-full bg-acid border-2 border-ink shadow-brut-md py-4 rounded-2xl font-black uppercase hover:bg-bubblegum">I received the item - complete order</button>
             </form>

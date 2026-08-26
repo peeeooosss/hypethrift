@@ -50,7 +50,7 @@ export default async function AdminFeaturedPage() {
 
       <div className="bg-white border-2 border-ink shadow-brut-lg rounded-2xl p-6">
         <h2 className="text-xl font-black uppercase mb-4">Feature a Listing</h2>
-        <form action={async (formData: FormData) => { await featureListing(formData); }} className="flex flex-wrap gap-3 items-end">
+        <form action={async (formData: FormData) => { "use server"; await featureListing(formData); }} className="flex flex-wrap gap-3 items-end">
           <div className="flex-1 min-w-[220px]">
             <label className="block text-xs uppercase font-black text-gray-500 mb-1">Live listing</label>
             <select name="listingId" required defaultValue="" className="w-full border-2 border-ink rounded-xl px-3 py-2 text-sm font-black">

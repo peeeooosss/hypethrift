@@ -281,7 +281,7 @@ function EndedAuctionView({
       )}
 
       {isWinner && !existingOrder && (
-        <form action={async (formData: FormData) => { await createOrderFromListing(listing.id, formData); }}>
+        <form action={async (formData: FormData) => { "use server"; await createOrderFromListing(listing.id, formData); }}>
           <button
             type="submit"
             className="w-full text-center bg-bubblegum border-2 border-ink shadow-brut-md py-3 rounded-2xl font-black uppercase text-sm hover:bg-acid transition-colors"

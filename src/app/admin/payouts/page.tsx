@@ -86,7 +86,7 @@ export default async function AdminPayoutsPage({
 
       <div className="bg-white border-2 border-ink shadow-brut-lg rounded-2xl p-6">
         <h2 className="text-xl font-black uppercase mb-4">Manual Payout</h2>
-        <form action={async (formData: FormData) => { await createPayout(formData); }} className="flex flex-wrap gap-3 items-end">
+        <form action={async (formData: FormData) => { "use server"; await createPayout(formData); }} className="flex flex-wrap gap-3 items-end">
           <div className="flex-1 min-w-[120px]">
             <label className="block text-xs uppercase font-black text-gray-500 mb-1">Seller ID</label>
             <input
