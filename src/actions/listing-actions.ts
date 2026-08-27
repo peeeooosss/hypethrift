@@ -97,6 +97,34 @@ export async function createListing(prevState: { error?: string; success?: boole
    const status: "DRAFT" | "PENDING_REVIEW" =
     action === "submit_review" ? "PENDING_REVIEW" : "DRAFT";
 
+  const mode = formData.get("mode")?.toString();
+  const isUpcomingIntent = mode === "upcoming";
+
+  if (isUpcomingIntent && action === "submit_review") {
+    const upcomingCount = await prisma.listing.count({
+      where: {
+        sellerId: seller.id,
+        OR: [
+          { status: "UPCOMING" },
+          { status: "PENDING_REVIEW", upcomingIntent: true },
+        ],
+      },
+    });
+    if (upcomingCount >= 5) {
+      return { error: "You can have at most 5 upcoming items in your showcase. Launch or remove one first." };
+    }
+  }
+
+  // Keep launch intent separate from the optional buyer-facing schedule.
+  const rawScheduled = formData.get("startsAt")?.toString();
+  let scheduledAt: Date | null = null;
+  if (isUpcomingIntent && action === "submit_review") {
+    if (rawScheduled) {
+      const parsedDate = new Date(rawScheduled);
+      if (!isNaN(parsedDate.getTime()) && parsedDate > new Date()) scheduledAt = parsedDate;
+    }
+  }
+
   await prisma.listing.create({
     data: {
       title,
@@ -108,9 +136,11 @@ export async function createListing(prevState: { error?: string; success?: boole
       currentBid: null,
       bidIncrement: 50,
       reservePrice,
-       size,
-       condition: condition ? (condition as ListingConditionType) : null,
+      size,
+      condition: condition ? (condition as ListingConditionType) : null,
       status,
+      startsAt: scheduledAt,
+      upcomingIntent: isUpcomingIntent,
       endsAt: new Date(Date.now() + duration * 60 * 60 * 1000),
     },
   });
@@ -154,7 +184,7 @@ export async function updateListing(prevState: { error?: string; success?: boole
   });
   if (!existing || existing.sellerId !== seller.id) return { error: "Listing not found" };
   if (existing.bidCount > 0) return { error: "This auction already has bids. Listing details are locked." };
-  if (!["DRAFT", "PENDING_REVIEW", "ACTIVE"].includes(existing.status)) {
+  if (!["DRAFT", "PENDING_REVIEW", "UPCOMING", "ACTIVE"].includes(existing.status)) {
     return { error: "This listing can no longer be edited" };
   }
 
@@ -228,6 +258,40 @@ async function requireBuyer() {
   return session.user.id;
 }
 
+export async function toggleRequestLive(prevState: { live?: boolean } | null, formData: FormData) {
+  const userId = await requireBuyer();
+  const listingId = formData.get("listingId")?.toString();
+  if (!listingId) return { live: false };
+
+  const listing = await prisma.listing.findUnique({
+    where: { id: listingId },
+    select: { status: true, sellerId: true },
+  });
+  if (!listing || listing.status !== "UPCOMING" || listing.sellerId === userId) return { live: false };
+
+  const existing = await prisma.upcomingVote.findUnique({
+    where: { userId_listingId: { userId, listingId } },
+  });
+
+  if (existing) {
+    await prisma.upcomingVote.delete({ where: { id: existing.id } });
+    revalidatePath("/");
+    revalidatePath(`/listing/${listingId}`);
+    revalidatePath("/upcoming");
+    revalidatePath("/seller/dashboard");
+    return { live: false };
+  }
+
+  await prisma.upcomingVote.create({
+    data: { userId, listingId },
+  });
+  revalidatePath("/");
+  revalidatePath(`/listing/${listingId}`);
+  revalidatePath("/upcoming");
+  revalidatePath("/seller/dashboard");
+  return { live: true };
+}
+
 export async function placeBid(prevState: { error?: string; success?: boolean } | null, formData: FormData) {
   const userId = await requireBuyer();
   const listingId = formData.get("listingId")?.toString();
@@ -285,4 +349,75 @@ export async function placeBid(prevState: { error?: string; success?: boolean } 
   revalidatePath("/listings");
   revalidatePath("/");
   return { success: true, amount };
+}
+
+export async function launchUpcoming(formData: FormData) {
+  const seller = await requireSeller();
+  const listingId = formData.get("listingId")?.toString();
+  if (!listingId) return { error: "Missing listing id" };
+
+  const listing = await prisma.listing.findUnique({
+    where: { id: listingId },
+    select: { id: true, sellerId: true, status: true, endsAt: true },
+  });
+  if (!listing || listing.sellerId !== seller.id) return { error: "Listing not found" };
+  if (listing.status !== "UPCOMING") return { error: "This listing is not upcoming" };
+
+  // Reserve must be met check doesn't apply here; launching just requires a credit.
+  const result = await prisma.$transaction(async (tx) => {
+    const current = await tx.listing.findUnique({
+      where: { id: listingId },
+      select: { sellerId: true, status: true },
+    });
+    if (!current || current.sellerId !== seller.id || current.status !== "UPCOMING") return null;
+
+    const credit = await tx.user.updateMany({
+      where: { id: seller.id, listingCredits: { gt: 0 } },
+      data: { listingCredits: { decrement: 1 } },
+    });
+    if (credit.count !== 1) return null;
+
+    await tx.listing.update({
+      where: { id: listing.id },
+      data: {
+        status: "ACTIVE",
+        upcomingIntent: false,
+        startsAt: new Date(),
+        endsAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      },
+    });
+    return true;
+  });
+
+  if (!result) redirect("/seller/credits?error=listing_credit_required");
+
+  revalidatePath("/seller/dashboard");
+  revalidatePath("/seller/listings");
+  revalidatePath("/");
+  revalidatePath(`/listing/${listingId}`);
+  revalidatePath("/upcoming");
+  return { success: true };
+}
+
+export async function removeUpcoming(formData: FormData) {
+  const seller = await requireSeller();
+  const listingId = formData.get("listingId")?.toString();
+  if (!listingId) return;
+
+  const listing = await prisma.listing.findUnique({
+    where: { id: listingId },
+    select: { id: true, sellerId: true, status: true },
+  });
+  if (!listing || listing.sellerId !== seller.id || listing.status !== "UPCOMING") return;
+
+  await prisma.upcomingVote.deleteMany({ where: { listingId } });
+  await prisma.listing.update({
+    where: { id: listingId },
+    data: { status: "DRAFT", startsAt: null, upcomingIntent: false },
+  });
+  revalidatePath("/seller/dashboard");
+  revalidatePath("/");
+  revalidatePath("/listings");
+  revalidatePath(`/listing/${listingId}`);
+  revalidatePath("/upcoming");
 }

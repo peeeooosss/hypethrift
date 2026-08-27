@@ -7,15 +7,22 @@ import { motion, AnimatePresence } from "framer-motion";
 import CategoryBar from "@/components/ui/CategoryBar";
 import ProductCard from "@/components/drop/ProductCard";
 import BiddingCard from "@/components/drop/BiddingCard";
+import UpcomingSection, { type UpcomingItem } from "@/components/home/UpcomingSection";
 import { SearchIcon, FilterIcon } from "@/components/ui/Icons";
 
 import { CATEGORIES } from "@/data/categories";
 import type { CategoryId, Product } from "@/types";
 import FilterDrawer from "@/components/home/FilterDrawer";
 
-export default function LiveDropLandingPage({ products }: { products: Product[] }) {
+export default function LiveDropLandingPage({
+  products,
+  upcomingItems = [],
+}: {
+  products: Product[];
+  upcomingItems?: UpcomingItem[];
+}) {
   const [selectedCategory, setSelectedCategory] = useState<CategoryId>("all");
-  const [featuredProduct, setFeaturedProduct] = useState<Product>(
+  const [featuredProduct, setFeaturedProduct] = useState<Product | undefined>(
     () => products.find((p) => p.featured) ?? products.find((p) => p.hot) ?? products[0],
   );
   const [searchQuery, setSearchQuery] = useState("");
@@ -63,7 +70,55 @@ export default function LiveDropLandingPage({ products }: { products: Product[] 
   const activeCategory = CATEGORIES.find((c) => c.id === selectedCategory);
 
   if (!featuredProduct) {
-    return <div className="min-h-screen bg-cream flex items-center justify-center p-8 font-black uppercase">No live auctions yet.</div>;
+    return (
+      <div className="min-h-screen bg-cream text-ink overflow-hidden font-sans relative">
+        <div className="absolute inset-0 opacity-[0.04] pointer-events-none">
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: "repeating-linear-gradient(45deg, #121212, #121212 2px, transparent 2px, transparent 35px)",
+            }}
+          />
+        </div>
+        <nav className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          <Link href="/" className="text-2xl font-black uppercase tracking-tighter">
+            HypeThrift
+          </Link>
+        </nav>
+        <div className="max-w-3xl mx-auto px-4 pt-8 pb-16 text-center">
+          <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tight mb-4">The next drop is being curated</h1>
+          <p className="text-gray-600 font-bold">
+            Check out what&apos;s coming up and request a drop to go live.
+          </p>
+        </div>
+        <UpcomingSection items={upcomingItems} />
+        <footer className="bg-ink text-white py-12 mt-20">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex flex-col md:flex-row items-center justify-center gap-6">
+              <div className="text-center md:text-left">
+                <p className="text-sm text-gray-400 font-bold mb-2">Want to sell your thrift?</p>
+                <Link
+                  href="/seller"
+                  className="inline-block bg-bubblegum text-ink font-black uppercase px-6 py-3 rounded-full border-2 border-ink shadow-brut-md hover:bg-acid hover:text-ink transition-colors"
+                >
+                  Sell with Us
+                </Link>
+              </div>
+              <div className="w-full md:w-auto border-t md:border-t-0 border-l md:border-l-0 border-ink/30 my-4 md:my-0 px-4 md:px-0" />
+              <div className="text-center md:text-left">
+                <p className="text-sm text-gray-400 font-bold mb-2">Already a seller?</p>
+                <Link
+                  href="/seller"
+                  className="inline-block bg-white text-ink font-black uppercase px-6 py-3 rounded-full border-2 border-white shadow-brut-md hover:bg-acid hover:text-ink transition-colors"
+                >
+                  Seller Portal
+                </Link>
+              </div>
+            </div>
+          </div>
+        </footer>
+      </div>
+    );
   }
 
   return (
@@ -176,6 +231,9 @@ export default function LiveDropLandingPage({ products }: { products: Product[] 
           </div>
         )}
       </section>
+
+      {/* Coming Up Next */}
+      {upcomingItems.length > 0 && <div className="mt-12"><UpcomingSection items={upcomingItems} /></div>}
 
       {/* Seller Portal Footer */}
       <footer className="bg-ink text-white py-12 mt-20">

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import SizeFilter from "@/components/listing/SizeFilter";
 import SaveButton from "@/components/listing/SaveButton";
+import UpcomingSection, { type UpcomingItem } from "@/components/home/UpcomingSection";
 import { getSizesForCategory } from "@/lib/sizes";
 
 function money(n: number | null | undefined) {
@@ -36,9 +37,15 @@ export default async function ListingsIndexPage({
     ...categoryWhere,
     ...(selectedSizes.length > 0 && { size: { in: selectedSizes } }),
   };
+  const upcomingWhere = {
+    status: "UPCOMING" as const,
+    ...(q && { title: { contains: q, mode: "insensitive" as const } }),
+    ...(effectiveCat && { category: { slug: effectiveCat } }),
+    ...(selectedSizes.length > 0 && { size: { in: selectedSizes } }),
+  };
 
   const session = await auth();
-  const [listings, categories, savedIds, sizeRows] = await Promise.all([
+  const [listings, categories, savedIds, sizeRows, upcoming] = await Promise.all([
     prisma.listing.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -51,10 +58,36 @@ export default async function ListingsIndexPage({
           .then((r) => new Set(r.map((x) => x.listingId)))
       : Promise.resolve(new Set<string>()),
     prisma.listing.findMany({ where: categoryWhere, select: { size: true }, distinct: ["size"] }),
+    prisma.listing.findMany({
+      where: upcomingWhere,
+      orderBy: [{ startsAt: "asc" }, { createdAt: "desc" }],
+      include: {
+        category: true,
+        seller: { select: { name: true, email: true } },
+        _count: { select: { upcomingVotes: true } },
+      },
+    }),
   ]);
   const configuredSizes = getSizesForCategory(effectiveCat);
   const listedSizes = new Set(sizeRows.map((row) => row.size).filter((size): size is string => !!size));
   const availableSizes = configuredSizes.filter((size) => listedSizes.has(size));
+  const upcomingItems: UpcomingItem[] = await Promise.all(
+    upcoming.map(async (l) => ({
+      listingId: l.id,
+      title: l.title,
+      image: l.images[0] ?? null,
+      emoji: l.category.emoji,
+      bg: l.category.color,
+      sellerName: l.seller.name ?? l.seller.email,
+      startsAtIso: l.startsAt?.toISOString() ?? null,
+      voteCount: l._count.upcomingVotes,
+      userVoted: session?.user
+        ? (await prisma.upcomingVote.count({ where: { listingId: l.id, userId: session.user.id } })) > 0
+        : false,
+      isSeller: session?.user ? session.user.id === l.sellerId : false,
+      signedIn: !!session?.user,
+    })),
+  );
 
   return (
     <div className="min-h-screen bg-cream text-ink py-10 pb-24">
@@ -88,7 +121,7 @@ export default async function ListingsIndexPage({
         {effectiveCat && <SizeFilter categorySlug={effectiveCat} availableSizes={availableSizes} />}
 
         {listings.length === 0 ? (
-          <p className="font-bold text-gray-500 uppercase">No live auctions right now.</p>
+          <p className="font-bold text-gray-500 uppercase">No live auctions right now. See the upcoming showcase below.</p>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {listings.map((l) => {
@@ -120,6 +153,7 @@ export default async function ListingsIndexPage({
             })}
           </div>
         )}
+        {upcomingItems.length > 0 && <UpcomingSection items={upcomingItems} />}
       </div>
     </div>
   );

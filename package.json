@@ -32,6 +32,8 @@
     "debug": "4.3.4"
   },
   "devDependencies": {
+    "@prisma/config": "^7.9.1",
+    "@prisma/engines": "^7.9.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.10.5",
     "@types/react": "^19.0.4",

@@ -32,7 +32,7 @@ export default async function EditListingPage({ params }: { params: Promise<{ id
 
   if (!listing || listing.sellerId !== session.user.id) notFound();
 
-  const locked = listing.bidCount > 0 || !["DRAFT", "PENDING_REVIEW", "ACTIVE"].includes(listing.status);
+  const locked = listing.bidCount > 0 || !["DRAFT", "PENDING_REVIEW", "UPCOMING", "ACTIVE"].includes(listing.status);
 
   return (
     <div className="space-y-4">

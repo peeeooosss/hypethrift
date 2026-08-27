@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { createOrderFromListing } from "@/actions/auction-actions";
+import { toggleRequestLive } from "@/actions/listing-actions";
 import BidForm from "@/components/listing/BidForm";
 import BidHistory from "@/components/listing/BidHistory";
 import SaveButton from "@/components/listing/SaveButton";
@@ -38,17 +39,21 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
         take: 20,
         include: { bidder: { select: { name: true, image: true } } },
       },
+      _count: { select: { upcomingVotes: true } },
     },
   });
 
   if (!listing) notFound();
 
   // Draft / pending-review / rejected listings are only visible to their owner or an admin.
-  const isPublicStatus = ["ACTIVE", "ENDED", "SOLD"].includes(listing.status);
+  const isPublicStatus = ["ACTIVE", "UPCOMING", "ENDED", "SOLD"].includes(listing.status);
   const isOwnerOrAdmin = session?.user && (session.user.id === listing.sellerId || session.user.role === "ADMIN");
   if (!isPublicStatus && !isOwnerOrAdmin) notFound();
   const isSaved = session?.user
     ? (await prisma.savedItem.count({ where: { userId: session.user.id, listingId: id } })) > 0
+    : false;
+  const userVoted = session?.user
+    ? (await prisma.upcomingVote.count({ where: { listingId: id, userId: session.user.id } })) > 0
     : false;
   const currentBid = listing.currentBid ?? listing.startingBid;
   const nextMin = currentBid + listing.bidIncrement;
@@ -157,11 +162,20 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
 
           <div className="bg-ink/5 border-2 border-dashed border-ink/20 rounded-xl py-3 text-center mb-6">
             <span className="font-black text-bubblegum">
-              Time left: {timeRemaining(listing.endsAt.toString())}
+              {listing.status === "UPCOMING" ? "Bids open when this drop goes live" : `Time left: ${timeRemaining(listing.endsAt.toString())}`}
             </span>
           </div>
 
-          {canBid ? (
+          {listing.status === "UPCOMING" ? (
+            <UpcomingPanel
+              listingId={listing.id}
+              voteCount={listing._count.upcomingVotes}
+              isSeller={session?.user?.id === listing.sellerId}
+              userVoted={userVoted}
+              startsAt={listing.startsAt?.toISOString() ?? null}
+              signedIn={!!session?.user}
+            />
+          ) : canBid ? (
             <BidForm listingId={listing.id} minimum={nextMin} />
           ) : isEnded ? (
             <p className="text-center text-gray-500 font-bold uppercase">Auction ended</p>
@@ -196,6 +210,64 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
         existingOrder={existingOrder}
         currentUserId={session?.user?.id}
       />
+    </div>
+  );
+}
+
+function UpcomingPanel({
+  listingId,
+  voteCount,
+  isSeller,
+  userVoted,
+  startsAt,
+  signedIn,
+}: {
+  listingId: string;
+  voteCount: number;
+  isSeller: boolean;
+  userVoted: boolean;
+  startsAt: string | null;
+  signedIn: boolean;
+}) {
+  const startLabel = startsAt && !isNaN(new Date(startsAt).getTime())
+    ? new Date(startsAt).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })
+    : "To be announced";
+
+  return (
+    <div className="space-y-3">
+      <p className="text-center bg-bubblegum/30 border-2 border-bubblegum rounded-2xl py-2 font-black uppercase text-sm">
+        ⏳ Coming Up Next — bids open once it goes live
+      </p>
+      <p className="text-center text-xs font-bold text-gray-500">
+        Scheduled start: <span className="font-black text-ink">{startLabel}</span>
+      </p>
+      <p className="text-center font-black text-sm">🔥 {voteCount} {voteCount === 1 ? "buyer wants" : "buyers want"} this live</p>
+
+      {isSeller ? (
+        <p className="text-center text-xs font-black text-gray-500 uppercase">This is your upcoming listing</p>
+      ) : !signedIn ? (
+        <form action={async (formData: FormData) => { "use server"; await toggleRequestLive(null, formData); }}>
+          <input type="hidden" name="listingId" value={listingId} />
+          <button
+            type="submit"
+            className="w-full text-center bg-ink text-white border-2 border-ink shadow-brut-md py-3 rounded-2xl font-black uppercase text-sm hover:bg-acid hover:text-ink transition-colors"
+          >
+            Sign in to Request Live
+          </button>
+        </form>
+      ) : (
+        <form action={async (formData: FormData) => { "use server"; await toggleRequestLive(null, formData); }}>
+          <input type="hidden" name="listingId" value={listingId} />
+          <button
+            type="submit"
+            className={`w-full text-center border-2 border-ink shadow-brut-md py-3 rounded-2xl font-black uppercase text-sm transition-colors ${
+              userVoted ? "bg-acid hover:bg-bubblegum" : "bg-ink text-white hover:bg-acid hover:text-ink"
+            }`}
+          >
+            {userVoted ? "✓ Requested Live" : "Request Live"}
+          </button>
+        </form>
+      )}
     </div>
   );
 }

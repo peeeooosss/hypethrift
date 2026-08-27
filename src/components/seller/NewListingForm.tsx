@@ -19,6 +19,7 @@ export default function NewListingForm({ categories }: NewListingFormProps) {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
   const [selectedSize, setSelectedSize] = useState<string>("");
+  const [launchMode, setLaunchMode] = useState<"live" | "upcoming">("live");
   const [serverState, formAction] = useActionState(createListing, null);
 
   const selectedCategory = categories.find((c) => c.id === selectedCategoryId);
@@ -209,6 +210,49 @@ export default function NewListingForm({ categories }: NewListingFormProps) {
           </div>
         </div>
 
+        <div className="rounded-2xl border-2 border-ink bg-ink/5 p-4">
+          <p className="text-xs uppercase font-black text-gray-500 tracking-widest mb-3">How do you want to launch this drop?</p>
+          <input type="hidden" name="mode" value={launchMode} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setLaunchMode("live")}
+              className={`text-left rounded-xl border-2 px-4 py-3 transition-colors ${launchMode === "live" ? "border-ink bg-ink text-white" : "border-ink/30 bg-white"}`}
+            >
+              <span className="block font-black uppercase text-sm">🔴 Go Live</span>
+              <span className={`block text-xs font-bold mt-1 ${launchMode === "live" ? "text-acid" : "text-gray-500"}`}>
+                Starts immediately after admin approval and consumes 1 listing credit.
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setLaunchMode("upcoming")}
+              className={`text-left rounded-xl border-2 px-4 py-3 transition-colors ${launchMode === "upcoming" ? "border-ink bg-ink text-white" : "border-ink/30 bg-white"}`}
+            >
+              <span className="block font-black uppercase text-sm">⏳ Coming Up</span>
+              <span className={`block text-xs font-bold mt-1 ${launchMode === "upcoming" ? "text-acid" : "text-gray-500"}`}>
+                Pre-list in your showcase for buyers to vote. Free until you choose to launch.
+              </span>
+            </button>
+          </div>
+
+          {launchMode === "upcoming" && (
+            <div className="mt-3">
+              <label className="block text-xs uppercase font-black text-gray-500 tracking-widest mb-1">
+                Optional scheduled start (leave blank for manual launch)
+              </label>
+              <input
+                name="startsAt"
+                type="datetime-local"
+                className="w-full bg-white border-2 border-ink rounded-xl px-4 py-3 font-bold text-sm focus:outline-none focus:shadow-brut-sm"
+              />
+              <p className="text-xs font-bold text-gray-500 mt-1">
+                You can launch any time by spending 1 listing credit; this is just a suggested start so buyers know when it may go live.
+              </p>
+            </div>
+          )}
+        </div>
+
         <div className="flex gap-3 pt-2">
           <button
             type="submit"
@@ -224,7 +268,7 @@ export default function NewListingForm({ categories }: NewListingFormProps) {
             value="submit_review"
             className="flex-1 bg-ink text-white border-2 border-ink shadow-brut-lg py-3 rounded-2xl font-black uppercase text-sm hover:bg-bubblegum hover:text-ink transition-colors"
           >
-            Submit for Review
+            {launchMode === "upcoming" ? "Submit to Upcoming Showcase" : "Submit for Live Review"}
           </button>
         </div>
       </form>

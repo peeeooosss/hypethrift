@@ -118,21 +118,36 @@ export async function approveListing(formData: FormData) {
 
   const listing = await prisma.listing.findUnique({
     where: { id: listingId },
-    select: { sellerId: true, status: true },
+    select: { sellerId: true, status: true, upcomingIntent: true },
   });
   if (!listing || listing.status !== "PENDING_REVIEW") return;
 
-  const updated = await prisma.$transaction(async (tx) => {
-    const seller = await tx.user.updateMany({
-      where: { id: listing.sellerId, listingCredits: { gt: 0 } },
-      data: { listingCredits: { decrement: 1 } },
-    });
-    if (seller.count !== 1) return false;
+  // Upcoming approval is free; live approval follows the existing credit flow.
+  const intentUpcoming = listing.upcomingIntent;
+  const target = intentUpcoming ? "UPCOMING" : "ACTIVE";
 
-    await tx.listing.update({
-      where: { id: listingId },
-      data: { status: "ACTIVE", verified: true },
-    });
+  const updated = await prisma.$transaction(async (tx) => {
+    if (target === "ACTIVE") {
+      const seller = await tx.user.updateMany({
+        where: { id: listing.sellerId, listingCredits: { gt: 0 } },
+        data: { listingCredits: { decrement: 1 } },
+      });
+      if (seller.count !== 1) return false;
+
+      await tx.listing.update({
+        where: { id: listingId },
+        data: { status: "ACTIVE", verified: true },
+      });
+    } else {
+      const upcomingCount = await tx.listing.count({
+        where: { sellerId: listing.sellerId, status: "UPCOMING" },
+      });
+      if (upcomingCount >= 5) return false;
+      await tx.listing.update({
+        where: { id: listingId },
+        data: { status: "UPCOMING", verified: true },
+      });
+    }
     return true;
   });
 
@@ -142,6 +157,9 @@ export async function approveListing(formData: FormData) {
   }
   revalidatePath("/admin/listings");
   revalidatePath("/seller/listings");
+  revalidatePath("/seller/dashboard");
+  revalidatePath("/");
+  revalidatePath("/upcoming");
 }
 
 export async function rejectListing(formData: FormData) {
@@ -149,8 +167,13 @@ export async function rejectListing(formData: FormData) {
   const listingId = formData.get("listingId")?.toString();
   if (!listingId) return;
 
-  await prisma.listing.update({ where: { id: listingId }, data: { status: "REJECTED" } });
+  await prisma.$transaction([
+    prisma.upcomingVote.deleteMany({ where: { listingId } }),
+    prisma.listing.update({ where: { id: listingId }, data: { status: "REJECTED", upcomingIntent: false } }),
+  ]);
   revalidatePath("/admin/listings");
+  revalidatePath("/");
+  revalidatePath("/seller/listings");
 }
 
 export async function toggleFeatured(formData: FormData) {
@@ -234,6 +257,7 @@ export async function deleteListing(formData: FormData) {
 
   await prisma.listing.delete({ where: { id: listingId } });
   revalidatePath("/admin/listings");
+  revalidatePath("/");
 }
 
 // ---------------------------------------------------------------------------

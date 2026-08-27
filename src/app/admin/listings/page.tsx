@@ -7,9 +7,14 @@ import {
 } from "@/actions/admin-actions";
 
 export default async function AdminListingsPage() {
-  const [pending, active] = await Promise.all([
+  const [pending, active, upcoming] = await Promise.all([
     prisma.listing.findMany({ where: { status: "PENDING_REVIEW" }, orderBy: { createdAt: "desc" }, include: { seller: true } }),
     prisma.listing.findMany({ where: { status: "ACTIVE" }, orderBy: { createdAt: "desc" }, include: { seller: true } }),
+    prisma.listing.findMany({
+      where: { status: "UPCOMING" },
+      orderBy: { createdAt: "desc" },
+      include: { seller: true, _count: { select: { upcomingVotes: true } } },
+    }),
   ]);
 
   return (
@@ -24,6 +29,11 @@ export default async function AdminListingsPage() {
       <section className="bg-white border-2 border-ink shadow-brut-lg rounded-2xl p-6">
         <h2 className="text-xl font-black uppercase mb-4">Active ({active.length})</h2>
         <ListingsTable items={active} showModeration={false} />
+      </section>
+
+      <section className="bg-white border-2 border-ink shadow-brut-lg rounded-2xl p-6">
+        <h2 className="text-xl font-black uppercase mb-4">Upcoming Showcase ({upcoming.length})</h2>
+        <UpcomingTable items={upcoming} />
       </section>
     </div>
   );
@@ -95,6 +105,54 @@ function ListingsTable({ items, showModeration }: ListingsTableProps) {
               <form action={deleteListing} className="inline">
                 <input type="hidden" name="listingId" value={l.id} />
                 <button className="bg-ink text-white border-2 border-ink px-2 py-1 rounded text-xs font-black hover:bg-bubblegum hover:text-ink">✕</button>
+              </form>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+interface UpcomingItem {
+  id: string;
+  title: string;
+  images: string[];
+  seller: { name: string | null; email: string };
+  status: string;
+  _count: { upcomingVotes: number };
+}
+
+function UpcomingTable({ items }: { items: UpcomingItem[] }) {
+  return (
+    <table className="w-full text-left">
+      <thead>
+        <tr className="border-b-2 border-dashed border-ink/20">
+          <th className="pb-2 text-xs uppercase font-black text-gray-500">Image</th>
+          <th className="pb-2 text-xs uppercase font-black text-gray-500">Title</th>
+          <th className="pb-2 text-xs uppercase font-black text-gray-500">Seller</th>
+          <th className="pb-2 text-xs uppercase font-black text-gray-500">Requests</th>
+          <th className="pb-2 text-xs uppercase font-black text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {items.map((l) => (
+          <tr key={l.id} className="border-b border-ink/10">
+            <td className="py-3">
+              {l.images?.[0] ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={l.images[0]} alt={l.title} className="w-12 h-12 rounded-xl border-2 border-ink object-cover" />
+              ) : (
+                <div className="w-12 h-12 rounded-xl border-2 border-ink bg-gray-100 flex items-center justify-center text-xl">📦</div>
+              )}
+            </td>
+            <td className="py-3 font-black">{l.title}</td>
+            <td className="py-3 text-xs">{l.seller.name ?? l.seller.email}</td>
+            <td className="py-3 text-xs font-black">🔥 {l._count.upcomingVotes}</td>
+            <td className="py-3 text-right space-x-1">
+              <form action={rejectListing} className="inline">
+                <input type="hidden" name="listingId" value={l.id} />
+                <button className="bg-ink text-white border-2 border-ink px-2 py-1 rounded text-xs font-black">Remove</button>
               </form>
             </td>
           </tr>

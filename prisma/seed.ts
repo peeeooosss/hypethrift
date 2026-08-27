@@ -79,6 +79,22 @@ const PAST_LISTINGS = [
   { id: "seed-past-Varsity Jacket", images: ["https://ee7oisanmz.ufs.sh/f/NGE5n6g03KsU1b0Q60lXpgPteoYNzChD2jZMVkLKv63ysnS4"], title: "90s Varsity Jacket", sellerKey: "streetvault", categorySlug: "outerwear", startingBid: 5200, currentBid: 6800, condition: "GOOD", size: "M", status: "SOLD" },
 ];
 
+const UPCOMING_LISTINGS = [
+  { id: "seed-up-Dior B23 Oblique", images: ["https://ee7oisanmz.ufs.sh/f/NGE5n6g03KsUpJhBJgv1XCluO2W14MIgGbH07tQ63idAYz5v"], title: "Dior B23 Oblique High", sellerKey: "archive", categorySlug: "sneakers", startingBid: 9800, currentBid: 9800, condition: "EXCELLENT", size: "UK 8", verified: true, hot: true, startDaysFromNow: 2 },
+  { id: "seed-up-Stone Island Cargo", images: ["https://ee7oisanmz.ufs.sh/f/NGE5n6g03KsUDdi4zxEy2bS5eRWUXOQiv7ckpJoCzN60PuaK"], title: "Stone Island Cargo Pants", sellerKey: "streetvault", categorySlug: "streetwear", startingBid: 4300, currentBid: 4300, condition: "GOOD", size: "M", verified: true, hot: true, startDaysFromNow: 3 },
+  { id: "seed-up-Balenciaga City Bag", images: ["https://ee7oisanmz.ufs.sh/f/NGE5n6g03KsUTekyrxPH1DZegGoJyp3AI20LPlERFhB4X98K"], title: "Balenciaga City Bag", sellerKey: "closet", categorySlug: "bags", startingBid: 8900, currentBid: 8900, condition: "GOOD", size: "One Size", verified: true, hot: false, startDaysFromNow: 4 },
+];
+
+type UpcomingVoteSeed = readonly [id: string, listingId: string, buyerKey: string];
+
+const UPCOMING_VOTES: UpcomingVoteSeed[] = [
+  ["seed-upvote-dior-alex", "seed-up-Dior B23 Oblique", "alex"],
+  ["seed-upvote-dior-riya", "seed-up-Dior B23 Oblique", "riya"],
+  ["seed-upvote-stone-alex", "seed-up-Stone Island Cargo", "alex"],
+  ["seed-upvote-stone-kabir", "seed-up-Stone Island Cargo", "kabir"],
+  ["seed-upvote-balenciaga-riya", "seed-up-Balenciaga City Bag", "riya"],
+];
+
 type DemoBid = readonly [id: string, listingId: string, buyerKey: string, amount: number];
 
 const LIVE_BIDS: DemoBid[] = [
@@ -142,6 +158,7 @@ async function upsertListing(
     watchers?: number;
     status?: string;
     images?: string[];
+    startsAt?: Date;
   },
   sellers: Record<string, { id: string }>,
   endsAt: Date,
@@ -156,6 +173,7 @@ async function upsertListing(
       startingBid: listing.startingBid,
       currentBid: listing.currentBid,
       status: (listing.status ?? "ACTIVE") as any,
+      upcomingIntent: listing.status === "UPCOMING",
       condition: listing.condition as any,
       size: listing.size,
       verified: listing.verified ?? false,
@@ -163,6 +181,7 @@ async function upsertListing(
       bidCount: listing.bidCount ?? 0,
       views: listing.views ?? 0,
       watchers: listing.watchers ?? 0,
+      ...(listing.startsAt ? { startsAt: listing.startsAt } : {}),
       endsAt,
     },
     create: {
@@ -176,6 +195,7 @@ async function upsertListing(
       currentBid: listing.currentBid,
       bidIncrement: 50,
       status: (listing.status ?? "ACTIVE") as any,
+      upcomingIntent: listing.status === "UPCOMING",
       verified: listing.verified ?? false,
       hot: listing.hot ?? false,
       condition: listing.condition as any,
@@ -183,6 +203,7 @@ async function upsertListing(
       bidCount: listing.bidCount ?? 0,
       views: listing.views ?? 0,
       watchers: listing.watchers ?? 0,
+      ...(listing.startsAt ? { startsAt: listing.startsAt } : {}),
       endsAt,
     },
   });
@@ -252,7 +273,18 @@ async function main() {
   for (const listing of LIVE_LISTINGS) await upsertListing(listing, sellers, liveEndsAt);
   for (const listing of REVIEW_LISTINGS) await upsertListing({ ...listing, status: "PENDING_REVIEW" }, sellers, liveEndsAt);
   for (const listing of PAST_LISTINGS) await upsertListing(listing, sellers, pastEndsAt);
-  console.log(`Seeded ${LIVE_LISTINGS.length} live listings, ${REVIEW_LISTINGS.length} review listings, and ${PAST_LISTINGS.length} past listings`);
+  for (const listing of UPCOMING_LISTINGS) {
+    await upsertListing(
+      {
+        ...listing,
+        status: "UPCOMING",
+        startsAt: new Date(Date.now() + listing.startDaysFromNow * 24 * 60 * 60 * 1000),
+      },
+      sellers,
+      new Date(Date.now() + (listing.startDaysFromNow + 2) * 24 * 60 * 60 * 1000),
+    );
+  }
+  console.log(`Seeded ${LIVE_LISTINGS.length} live listings, ${REVIEW_LISTINGS.length} review listings, ${PAST_LISTINGS.length} past listings, and ${UPCOMING_LISTINGS.length} upcoming listings`);
 
   for (const [id, listingId, buyerKey, amount] of LIVE_BIDS) {
     await upsertBid(id, listingId, buyers[buyerKey].id, amount);
@@ -260,6 +292,15 @@ async function main() {
   for (const [id, listingId, buyerKey, amount] of PAST_BIDS) {
     await upsertBid(id, listingId, buyers[buyerKey].id, amount);
   }
+
+  for (const [id, listingId, buyerKey] of UPCOMING_VOTES) {
+    await prisma.upcomingVote.upsert({
+      where: { userId_listingId: { userId: buyers[buyerKey].id, listingId } },
+      update: {},
+      create: { id, userId: buyers[buyerKey].id, listingId },
+    });
+  }
+  console.log(`Seeded ${UPCOMING_VOTES.length} upcoming vote(s)`);
 
   const alex = buyers.alex;
   const riya = buyers.riya;

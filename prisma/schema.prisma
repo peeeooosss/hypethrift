@@ -22,6 +22,7 @@ enum SellerStatus {
 enum ListingStatus {
   DRAFT
   PENDING_REVIEW
+  UPCOMING
   ACTIVE
   ENDED
   SOLD
@@ -112,6 +113,7 @@ model User {
    payouts          Payout[]
    supportTickets   SupportTicket[]
    savedItems       SavedItem[]
+   upcomingVotes    UpcomingVote[]
    sellerProfile    SellerProfile?
    creditPurchases  CreditPurchase[]
 }
@@ -160,7 +162,9 @@ model Listing {
   verified      Boolean       @default(false)
   hot           Boolean       @default(false)
   endsAt        DateTime
-   views         Int           @default(0)
+  startsAt      DateTime?
+  upcomingIntent Boolean      @default(false)
+  views         Int           @default(0)
    watchers      Int           @default(0)
    bidCount      Int           @default(0)
    createdAt     DateTime      @default(now())
@@ -172,6 +176,7 @@ model Listing {
     order    Order?
     savedItems SavedItem[]
     featureCharges FeatureCharge[]
+    upcomingVotes UpcomingVote[]
 
    @@index([status])
    @@index([categoryId])
@@ -211,6 +216,20 @@ model SavedItem {
   listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
   @@unique([userId, listingId])
+  @@index([userId])
+}
+
+model UpcomingVote {
+  id        String   @id @default(cuid())
+  userId    String
+  listingId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
+  @@index([listingId])
   @@index([userId])
 }
 

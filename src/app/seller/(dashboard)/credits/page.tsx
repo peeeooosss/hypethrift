@@ -6,10 +6,15 @@ import { requestListingCredits } from "@/actions/credit-actions";
 
 export const revalidate = 0;
 
-export default async function SellerCreditsPage() {
+export default async function SellerCreditsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   const session = await auth();
   if (!session?.user) redirect("/login");
   if (session.user.role !== "SELLER") redirect("/account");
+  const { error } = await searchParams;
 
   const [profile, purchases] = await Promise.all([
     prisma.user.findUnique({ where: { id: session.user.id }, select: { listingCredits: true } }),
@@ -23,6 +28,12 @@ export default async function SellerCreditsPage() {
         <h1 className="text-3xl font-black uppercase mt-1">Listing Credits</h1>
         <p className="text-gray-500 font-bold mt-2">You have {profile?.listingCredits ?? 0} live listing credits.</p>
       </div>
+
+      {error === "listing_credit_required" && (
+        <p className="text-red-600 font-black bg-red-50 border-2 border-red-200 rounded-xl py-3 px-4">
+          You need a listing credit to launch a drop. Buy credits below, then try again.
+        </p>
+      )}
 
       <div className="grid md:grid-cols-3 gap-5">
         {LISTING_PACKAGES.map((item) => {

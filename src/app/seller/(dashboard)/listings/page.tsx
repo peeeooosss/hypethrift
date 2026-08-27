@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { deleteListing } from "@/actions/listing-actions";
+import { deleteListing, launchUpcoming, removeUpcoming } from "@/actions/listing-actions";
 import { closeAuction } from "@/actions/auction-actions";
 
 export const revalidate = 0;
@@ -19,6 +19,7 @@ export default async function SellerListingsPage() {
           include: { bidder: { select: { name: true, email: true } } },
         },
         order: { select: { id: true, status: true } },
+        _count: { select: { upcomingVotes: true } },
       },
     }),
     prisma.listing.count({ where: { sellerId: session!.user.id } }),
@@ -26,6 +27,7 @@ export default async function SellerListingsPage() {
 
   const statusLabel = {
     ACTIVE: { label: "Live", color: "bg-acid text-ink" },
+    UPCOMING: { label: "Upcoming", color: "bg-bubblegum text-ink" },
     PENDING_REVIEW: { label: "In Review", color: "bg-bubblegum text-ink" },
     DRAFT: { label: "Draft", color: "bg-gray-300 text-gray-800" },
     REJECTED: { label: "Rejected", color: "bg-ink text-white" },
@@ -109,6 +111,11 @@ export default async function SellerListingsPage() {
                         {s.label}
                       </span>
                       {l.featured && <span className="ml-1 text-xs font-black">⭐</span>}
+                      {l.status === "UPCOMING" && (
+                        <span className="ml-1 inline-block px-2 py-1 rounded-xl text-xs font-black bg-acid/20 border-2 border-acid">
+                          {l._count.upcomingVotes} 🔥
+                        </span>
+                      )}
                     </td>
                     <td className="py-3 text-right space-x-1">
                       {!["ENDED", "SOLD", "REJECTED"].includes(l.status) && (
@@ -118,6 +125,28 @@ export default async function SellerListingsPage() {
                         >
                           Edit
                         </Link>
+                      )}
+                      {l.status === "UPCOMING" && (
+                        <>
+                          <form action={launchUpcoming} className="inline">
+                            <input type="hidden" name="listingId" value={l.id} />
+                            <button
+                              type="submit"
+                              className="bg-bubblegum border-2 border-ink px-2 py-1 rounded text-xs font-black uppercase hover:bg-acid transition-colors"
+                            >
+                              🚀 Launch Live (1 credit)
+                            </button>
+                          </form>
+                          <form action={removeUpcoming} className="inline">
+                            <input type="hidden" name="listingId" value={l.id} />
+                            <button
+                              type="submit"
+                              className="border-2 border-ink bg-white px-2 py-1 rounded text-xs font-black uppercase hover:bg-bubblegum transition-colors"
+                            >
+                              Remove
+                            </button>
+                          </form>
+                        </>
                       )}
                       {l.status === "ACTIVE" && (
                         <form action={closeAuction} className="inline">
