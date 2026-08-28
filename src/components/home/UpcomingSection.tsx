@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo, useState } from "react";
 import { useActionState } from "react";
 import { toggleRequestLive } from "@/actions/listing-actions";
+import { CATEGORIES } from "@/data/categories";
+import type { CategoryId } from "@/types";
 
 export interface UpcomingItem {
   listingId: string;
@@ -10,6 +13,7 @@ export interface UpcomingItem {
   image: string | null;
   emoji: string;
   bg: string;
+  categorySlug: string;
   sellerName: string;
   startsAtIso: string | null;
   voteCount: number;
@@ -27,20 +31,59 @@ function formatStarts(startsAtIso: string | null) {
 
 export default function UpcomingSection({ items }: { items: UpcomingItem[] }) {
   const [, formAction] = useActionState<{ live?: boolean } | null, FormData>(toggleRequestLive, null);
+  const [selectedCategory, setSelectedCategory] = useState<CategoryId>("all");
+
+  const filteredItems = useMemo(
+    () => selectedCategory === "all" ? items : items.filter((i) => i.categorySlug === selectedCategory),
+    [items, selectedCategory],
+  );
+
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: items.length };
+    for (const item of items) {
+      counts[item.categorySlug] = (counts[item.categorySlug] ?? 0) + 1;
+    }
+    return counts;
+  }, [items]);
+
+  const usedCategories = useMemo(
+    () => CATEGORIES.filter((c) => c.id === "all" || (categoryCounts[c.id] ?? 0) > 0),
+    [categoryCounts],
+  );
 
   if (items.length === 0) return null;
 
   return (
     <section className="max-w-7xl mx-auto px-4 pb-20">
-      <div className="mb-6">
+      <div className="mb-4">
         <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tight">⏳ Coming Up Next</h2>
         <p className="text-sm text-gray-500 font-bold mt-1">
           Pre-listings are free — hit &ldquo;Request Live&rdquo; to tell sellers what to launch next.
         </p>
       </div>
 
+      {/* Category filter pills */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {usedCategories.map((c) => (
+          <button
+            key={c.id}
+            onClick={() => setSelectedCategory(c.id as CategoryId)}
+            className={`text-xs font-black uppercase px-3 py-1 rounded-full border-2 border-ink transition-colors ${
+              selectedCategory === c.id ? "bg-ink text-white" : "bg-white text-ink hover:bg-ink/5"
+            }`}
+          >
+            {c.emoji} {c.name}
+            {c.id !== "all" && (
+              <span className={`ml-1 ${selectedCategory === c.id ? "text-acid" : "text-gray-400"}`}>
+                {categoryCounts[c.id] ?? 0}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {items.map((item) => (
+        {filteredItems.map((item) => (
           <div
             key={item.listingId}
             className="bg-white border-2 border-ink shadow-brut-lg rounded-2xl overflow-hidden flex flex-col"

@@ -128,7 +128,7 @@ export default async function SellerListingsPage() {
                       )}
                       {l.status === "UPCOMING" && (
                         <>
-                          <form action={launchUpcoming} className="inline">
+                          <form action={async (formData: FormData) => { "use server"; await launchUpcoming(formData); }} className="inline">
                             <input type="hidden" name="listingId" value={l.id} />
                             <button
                               type="submit"
@@ -137,7 +137,7 @@ export default async function SellerListingsPage() {
                               🚀 Launch Live (1 credit)
                             </button>
                           </form>
-                          <form action={removeUpcoming} className="inline">
+                          <form action={async (formData: FormData) => { "use server"; await removeUpcoming(formData); }} className="inline">
                             <input type="hidden" name="listingId" value={l.id} />
                             <button
                               type="submit"

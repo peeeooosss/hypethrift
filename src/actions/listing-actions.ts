@@ -421,3 +421,41 @@ export async function removeUpcoming(formData: FormData) {
   revalidatePath(`/listing/${listingId}`);
   revalidatePath("/upcoming");
 }
+
+export async function promoteDraftToUpcoming(formData: FormData) {
+  const seller = await requireSeller();
+  const listingId = formData.get("listingId")?.toString();
+  if (!listingId) return { error: "Missing listing id" };
+
+  const listing = await prisma.listing.findUnique({
+    where: { id: listingId },
+    select: { id: true, sellerId: true, status: true },
+  });
+  if (!listing || listing.sellerId !== seller.id) return { error: "Listing not found" };
+  if (listing.status !== "DRAFT") return { error: "Only draft listings can be promoted to upcoming" };
+
+  const upcomingCount = await prisma.listing.count({
+    where: {
+      sellerId: seller.id,
+      OR: [
+        { status: "UPCOMING" },
+        { status: "PENDING_REVIEW", upcomingIntent: true },
+      ],
+    },
+  });
+  if (upcomingCount >= 5) {
+    return { error: "You can have at most 5 upcoming items. Launch or remove one first." };
+  }
+
+  await prisma.listing.update({
+    where: { id: listingId },
+    data: { status: "UPCOMING", upcomingIntent: true },
+  });
+
+  revalidatePath("/seller/dashboard");
+  revalidatePath("/seller/listings");
+  revalidatePath("/");
+  revalidatePath("/listings");
+  revalidatePath(`/listing/${listingId}`);
+  return { success: true };
+}

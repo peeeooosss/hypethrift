@@ -233,7 +233,9 @@ export default function LiveDropLandingPage({
       </section>
 
       {/* Coming Up Next */}
-      {upcomingItems.length > 0 && <div className="mt-12"><UpcomingSection items={upcomingItems} /></div>}
+      <div className="mt-12">
+        <UpcomingSection items={upcomingItems} />
+      </div>
 
       {/* Seller Portal Footer */}
       <footer className="bg-ink text-white py-12 mt-20">

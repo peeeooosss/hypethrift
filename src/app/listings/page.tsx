@@ -78,6 +78,7 @@ export default async function ListingsIndexPage({
       image: l.images[0] ?? null,
       emoji: l.category.emoji,
       bg: l.category.color,
+      categorySlug: l.category.slug,
       sellerName: l.seller.name ?? l.seller.email,
       startsAtIso: l.startsAt?.toISOString() ?? null,
       voteCount: l._count.upcomingVotes,
