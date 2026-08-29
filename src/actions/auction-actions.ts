@@ -196,8 +196,23 @@ export async function processEndedAuctions() {
   });
   let auctionsEnded = 0;
   let ordersCreated = 0;
+  let auctionsRestarted = 0;
 
   for (const listing of endedListings) {
+    if (listing.id.startsWith("seed-")) {
+      const randomHours = 6 + Math.floor(Math.random() * 66);
+      await prisma.listing.update({
+        where: { id: listing.id },
+        data: {
+          endsAt: new Date(Date.now() + randomHours * 60 * 60 * 1000),
+          bidCount: { increment: Math.floor(Math.random() * 3) },
+          views: { increment: Math.floor(Math.random() * 10) + 1 },
+        },
+      });
+      auctionsRestarted++;
+      continue;
+    }
+
     const ordersBefore = await prisma.order.count();
     await finalizeListing(listing.id, listing.sellerId, listing.reservePrice);
     const ordersAfter = await prisma.order.count();
@@ -205,7 +220,7 @@ export async function processEndedAuctions() {
     auctionsEnded++;
   }
 
-  return { auctionsEnded, ordersCreated };
+  return { auctionsEnded, ordersCreated, auctionsRestarted };
 }
 
 export async function expireUnpaidOrders() {

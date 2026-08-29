@@ -64,12 +64,18 @@ const BUYERS = [
 ];
 
 const LIVE_LISTINGS = [
-  { id: "seed-Jordan 1 Chicago (2015)", images: ["https://ee7oisanmz.ufs.sh/f/NGE5n6g03KsUpJhBJgv1XCluO2W14MIgGbH07tQ63idAYz5v"], title: "Jordan 1 Chicago (2015)", sellerKey: "archive", categorySlug: "sneakers", startingBid: 18500, currentBid: 19600, condition: "EXCELLENT", size: "UK 9.5", verified: true, hot: true, bidCount: 42, views: 128, watchers: 18 },
-  { id: "seed-Yeezy 350 Zebra", images: ["https://ee7oisanmz.ufs.sh/f/NGE5n6g03KsUHA44cQGNqrYIPGpuoTSHebvticB5lEDOR306"], title: "Yeezy 350 Zebra", sellerKey: "archive", categorySlug: "sneakers", startingBid: 12400, currentBid: 13800, condition: "GOOD", size: "UK 8.5", verified: true, hot: false, bidCount: 28, views: 89, watchers: 11 },
-  { id: "seed-Dunk Low Panda", images: ["https://ee7oisanmz.ufs.sh/f/NGE5n6g03KsUCYdWbxz8gyBb9VZjOYE1Ql7u30dt4pqm2ScG"], title: "Dunk Low Panda", sellerKey: "streetvault", categorySlug: "sneakers", startingBid: 8200, currentBid: 9700, condition: "EXCELLENT", size: "UK 9", verified: false, hot: true, bidCount: 56, views: 210, watchers: 26 },
-  { id: "seed-Supreme Box Logo Tee", images: ["https://ee7oisanmz.ufs.sh/f/NGE5n6g03KsUDdi4zxEy2bS5eRWUXOQiv7ckpJoCzN60PuaK"], title: "Supreme Box Logo Tee", sellerKey: "streetvault", categorySlug: "streetwear", startingBid: 5600, currentBid: 7100, condition: "LIKE_NEW", size: "L", verified: true, hot: true, bidCount: 34, views: 156, watchers: 20 },
-  { id: "seed-North Face Nuptse 1996", images: ["https://ee7oisanmz.ufs.sh/f/NGE5n6g03KsUfGCc5Em8NdCeh1i0TzyU76Z4SLBtP9ODQmjc"], title: "North Face Nuptse 1996", sellerKey: "closet", categorySlug: "outerwear", startingBid: 8900, currentBid: 10500, condition: "EXCELLENT", size: "XL", verified: true, hot: true, bidCount: 47, views: 201, watchers: 24 },
-  { id: "seed-Vintage Coach Shoulder Bag", images: ["https://ee7oisanmz.ufs.sh/f/NGE5n6g03KsUTekyrxPH1DZegGoJyp3AI20LPlERFhB4X98K"], title: "Vintage Coach Shoulder Bag", sellerKey: "closet", categorySlug: "bags", startingBid: 6400, currentBid: 7800, condition: "GOOD", size: "One Size", verified: true, hot: false, bidCount: 19, views: 74, watchers: 8 },
+  { id: "seed-Jordan 1 Chicago (2015)", images: ["https://ee7oisanmz.ufs.sh/f/NGE5n6g03KsUpJhBJgv1XCluO2W14MIgGbH07tQ63idAYz5v"], title: "Jordan 1 Chicago (2015)", sellerKey: "archive", categorySlug: "sneakers", startingBid: 18500, currentBid: 19600, condition: "EXCELLENT", size: "UK 9.5", verified: true, hot: true, bidCount: 42, views: 128, watchers: 18, endHoursFromNow: 23 },
+  { id: "seed-Yeezy 350 Zebra", images: ["https://ee7oisanmz.ufs.sh/f/NGE5n6g03KsUHA44cQGNqrYIPGpuoTSHebvticB5lEDOR306"], title: "Yeezy 350 Zebra", sellerKey: "archive", categorySlug: "sneakers", startingBid: 12400, currentBid: 13800, condition: "GOOD", size: "UK 8.5", verified: true, hot: false, bidCount: 28, views: 89, watchers: 11, endHoursFromNow: 47 },
+  { id: "seed-Dunk Low Panda", images: ["https://ee7oisanmz.ufs.sh/f/NGE5n6g03KsUCYdWbxz8gyBb9VZjOYE1Ql7u30dt4pqm2ScG"], title: "Dunk Low Panda", sellerKey: "streetvault", categorySlug: "sneakers", startingBid: 8200, currentBid: 9700, condition: "EXCELLENT", size: "UK 9", verified: false, hot: true, bidCount: 56, views: 210, watchers: 26, endHoursFromNow: 10 },
+  { id: "seed-Supreme Box Logo Tee", images: ["https://ee7oisanmz.ufs.sh/f/NGE5n6g03KsUDdi4zxEy2bS5eRWUXOQiv7ckpJoCzN60PuaK"], title: "Supreme Box Logo Tee", sellerKey: "streetvault", categorySlug: "streetwear", startingBid: 5600, currentBid: 7100, condition: "LIKE_NEW", size: "L", verified: true, hot: true, bidCount: 34, views: 156, watchers: 20, endHoursFromNow: 16 },
+  { id: "seed-North Face Nuptse 1996", images: ["https://ee7oisanmz.ufs.sh/f/NGE5n6g03KsUfGCc5Em8NdCeh1i0TzyU76Z4SLBtP9ODQmjc"], title: "North Face Nuptse 1996", sellerKey: "closet", categorySlug: "outerwear", startingBid: 8900, currentBid: 10500, condition: "EXCELLENT", size: "XL", verified: true, hot: true, bidCount: 47, views: 201, watchers: 24, endHoursFromNow: 5 },
+  { id: "seed-Vintage Coach Shoulder Bag", images: ["https://ee7oisanmz.ufs.sh/f/NGE5n6g03KsUTekyrxPH1DZegGoJyp3AI20LPlERFhB4X98K"], title: "Vintage Coach Shoulder Bag", sellerKey: "closet", categorySlug: "bags", startingBid: 6400, currentBid: 7800, condition: "GOOD", size: "One Size", verified: true, hot: false, bidCount: 19, views: 74, watchers: 8, endHoursFromNow: 71 },
+  { id: "seed-Vintage Levis Trucker Jacket", images: ["https://ee7oisanmz.ufs.sh/f/NGE5n6g03KsUiy7z6YCMrFu9bqTDdLX7BnyU1s3xI8aAep2R"], title: "Vintage Levi's Trucker Jacket", sellerKey: "closet", categorySlug: "vintage", startingBid: 4200, currentBid: 5100, condition: "GOOD", size: "M", verified: true, hot: true, bidCount: 15, views: 62, watchers: 9, endHoursFromNow: 35 },
+  { id: "seed-Rayban-Wayfarer", images: ["https://ee7oisanmz.ufs.sh/f/NGE5n6g03KsUVFHnF5t5cXpRtHoLiayrT8h2sgnuQzSBAExm"], title: "Ray-Ban Wayfarer Classic", sellerKey: "archive", categorySlug: "accessories", startingBid: 3200, currentBid: 3800, condition: "EXCELLENT", size: "One Size", verified: true, hot: false, bidCount: 11, views: 45, watchers: 6, endHoursFromNow: 95 },
+  { id: "seed-APC-Petit-New-Standard", images: ["https://ee7oisanmz.ufs.sh/f/NGE5n6g03KsU1b0Q60lXpgPteoYNzChD2jZMVkLKv63ysnS4"], title: "APC Petit New Standard Selvedge", sellerKey: "streetvault", categorySlug: "denim", startingBid: 7800, currentBid: 8500, condition: "LIKE_NEW", size: "W30", verified: true, hot: false, bidCount: 8, views: 38, watchers: 4, endHoursFromNow: 143 },
+  { id: "seed-Tiffany-Silver-Heart", images: ["https://ee7oisanmz.ufs.sh/f/NGE5n6g03KsUXQhjMnyp3uBVe8midP79oGMXA2RkHJF6xfrb"], title: "Tiffany Silver Heart Tag Necklace", sellerKey: "closet", categorySlug: "jewelry", startingBid: 5500, currentBid: 6200, condition: "NEW", size: "One Size", verified: true, hot: true, bidCount: 22, views: 98, watchers: 14, endHoursFromNow: 29 },
+  { id: "seed-NB-990v6", images: ["https://ee7oisanmz.ufs.sh/f/NGE5n6g03KsUpJhBJgv1XCluO2W14MIgGbH07tQ63idAYz5v"], title: "New Balance 990v6 Grey", sellerKey: "archive", categorySlug: "sneakers", startingBid: 11200, currentBid: 12100, condition: "NEW", size: "UK 10", verified: true, hot: false, bidCount: 9, views: 52, watchers: 7, endHoursFromNow: 167 },
+  { id: "seed-Carhartt-Detroit", images: ["https://ee7oisanmz.ufs.sh/f/NGE5n6g03KsUDdi4zxEy2bS5eRWUXOQiv7ckpJoCzN60PuaK"], title: "Carhartt WIP Detroit Jacket", sellerKey: "streetvault", categorySlug: "streetwear", startingBid: 6800, currentBid: 7400, condition: "GOOD", size: "L", verified: true, hot: true, bidCount: 17, views: 83, watchers: 11, endHoursFromNow: 47 },
 ];
 
 const REVIEW_LISTINGS = [
@@ -112,6 +118,12 @@ const LIVE_BIDS: DemoBid[] = [
   ["seed-live-supreme-kabir", "seed-Supreme Box Logo Tee", "kabir", 7100],
   ["seed-live-nuptse-alex", "seed-North Face Nuptse 1996", "alex", 10500],
   ["seed-live-bag-riya", "seed-Vintage Coach Shoulder Bag", "riya", 7800],
+  ["seed-live-trucker-kabir", "seed-Vintage Levis Trucker Jacket", "kabir", 5100],
+  ["seed-live-wayfarer-alex", "seed-Rayban-Wayfarer", "alex", 3800],
+  ["seed-live-apc-riya", "seed-APC-Petit-New-Standard", "riya", 8500],
+  ["seed-live-tiffany-kabir", "seed-Tiffany-Silver-Heart", "kabir", 6200],
+  ["seed-live-nb-alex", "seed-NB-990v6", "alex", 12100],
+  ["seed-live-carhartt-riya", "seed-Carhartt-Detroit", "riya", 7400],
 ];
 
 const PAST_BIDS: DemoBid[] = [
@@ -272,10 +284,12 @@ async function main() {
     });
   }
 
-  const liveEndsAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
   const pastEndsAt = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
-  for (const listing of LIVE_LISTINGS) await upsertListing(listing, sellers, liveEndsAt);
-  for (const listing of REVIEW_LISTINGS) await upsertListing({ ...listing, status: "PENDING_REVIEW" }, sellers, liveEndsAt);
+  for (const listing of LIVE_LISTINGS) {
+    const endsAt = new Date(Date.now() + (listing.endHoursFromNow ?? 24) * 60 * 60 * 1000);
+    await upsertListing(listing, sellers, endsAt);
+  }
+  for (const listing of REVIEW_LISTINGS) await upsertListing({ ...listing, status: "PENDING_REVIEW" }, sellers, new Date(Date.now() + 24 * 60 * 60 * 1000));
   for (const listing of PAST_LISTINGS) await upsertListing(listing, sellers, pastEndsAt);
   for (const listing of UPCOMING_LISTINGS) {
     await upsertListing(

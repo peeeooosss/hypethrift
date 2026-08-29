@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 const NAV = [
   { href: "/seller/dashboard", label: "Overview" },
+  { href: "/seller/upcoming", label: "Upcoming" },
   { href: "/seller/listings", label: "Listings" },
   { href: "/seller/listings/new", label: "New Drop" },
   { href: "/seller/orders", label: "Orders" },

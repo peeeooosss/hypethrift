@@ -160,14 +160,18 @@ export default function NewListingForm({ categories }: NewListingFormProps) {
            </div>
            <div>
              <label className="block text-xs uppercase font-bold text-gray-500 tracking-widest mb-1">Auction Duration</label>
-             <select name="duration" required defaultValue="24"
-               className="w-full bg-white border-2 border-ink rounded-xl px-4 py-3 font-bold text-sm focus:outline-none focus:shadow-brut-sm">
-               <option value="1">1 hour</option>
-               <option value="4">4 hours</option>
-               <option value="12">12 hours</option>
-               <option value="24">24 hours</option>
-               <option value="48">48 hours</option>
-             </select>
+              <select name="duration" required defaultValue="24"
+                className="w-full bg-white border-2 border-ink rounded-xl px-4 py-3 font-bold text-sm focus:outline-none focus:shadow-brut-sm">
+                <option value="1">1 hour</option>
+                <option value="4">4 hours</option>
+                <option value="12">12 hours</option>
+                <option value="24">24 hours</option>
+                <option value="48">2 days</option>
+                <option value="72">3 days</option>
+                <option value="168">7 days</option>
+                <option value="336">14 days</option>
+                <option value="720">30 days</option>
+              </select>
            </div>
          </div>
 

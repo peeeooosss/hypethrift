@@ -18,7 +18,7 @@ async function requireSeller() {
   return { id: session.user.id, role: session.user.role };
 }
 
-const DURATION_OPTIONS = [1, 4, 12, 24, 48] as const;
+const DURATION_OPTIONS = [1, 4, 12, 24, 48, 72, 168, 336, 720] as const;
 
 const listingSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
@@ -28,7 +28,7 @@ const listingSchema = z.object({
   reservePrice: z.coerce.number().int().optional().or(z.literal("").transform(() => undefined)),
   size: z.string().min(1, "Select a size"),
   condition: z.enum(["NEW", "LIKE_NEW", "EXCELLENT", "GOOD", "FAIR"]).optional(),
-  duration: z.enum(["1", "4", "12", "24", "48"]).transform(Number),
+  duration: z.enum(["1", "4", "12", "24", "48", "72", "168", "336", "720"]).transform(Number),
   images: z.array(z.string().url()).min(1, "Upload at least one image"),
   action: z.enum(["save_draft", "submit_review"]),
 });
