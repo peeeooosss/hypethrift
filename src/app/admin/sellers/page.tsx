@@ -1,22 +1,37 @@
 import { prisma } from "@/lib/prisma";
 import { approveSeller, rejectSeller } from "@/actions/admin-actions";
+import WhatsAppMessageButton from "@/components/admin/WhatsAppMessageButton";
+import { resolveWhatsAppMessages, SELLER_TEMPLATES } from "@/lib/whatsapp-templates";
+
+function sellerMessages(user: {
+  name: string | null;
+  email: string;
+  sellerNote: string | null;
+  sellerProfile: { storeName: string; whatsappNumber: string } | null;
+}) {
+  return resolveWhatsAppMessages(SELLER_TEMPLATES, {
+    sellerName: user.name ?? user.email,
+    storeName: user.sellerProfile?.storeName,
+    rejectionReason: user.sellerNote ?? undefined,
+  });
+}
 
 export default async function AdminSellersPage() {
   const [pending, approved, rejected] = await Promise.all([
     prisma.user.findMany({
       where: { role: "SELLER", sellerStatus: "PENDING" },
       orderBy: { createdAt: "desc" },
-      include: { sellerProfile: true },
+      select: { id: true, name: true, email: true, sellerNote: true, createdAt: true, updatedAt: true, sellerProfile: { select: { storeName: true, whatsappNumber: true, location: true, acceptedAt: true } } },
     }),
     prisma.user.findMany({
       where: { role: "SELLER", sellerStatus: "APPROVED" },
       orderBy: { createdAt: "desc" },
-      include: { sellerProfile: true },
+      select: { id: true, name: true, email: true, sellerNote: true, createdAt: true, updatedAt: true, sellerProfile: { select: { storeName: true, whatsappNumber: true, location: true, acceptedAt: true } } },
     }),
     prisma.user.findMany({
       where: { role: "SELLER", sellerStatus: "REJECTED" },
       orderBy: { updatedAt: "desc" },
-      include: { sellerProfile: true },
+      select: { id: true, name: true, email: true, sellerNote: true, createdAt: true, updatedAt: true, sellerProfile: { select: { storeName: true, whatsappNumber: true, location: true, acceptedAt: true } } },
     }),
   ]);
 
@@ -54,8 +69,9 @@ export default async function AdminSellersPage() {
                       ? new Date(u.sellerProfile.acceptedAt).toLocaleDateString()
                       : new Date(u.createdAt).toLocaleDateString()}
                   </td>
-                  <td className="py-3 text-right space-x-2">
-                    <form action={approveSeller} className="inline">
+                   <td className="py-3 text-right space-x-2">
+                     <WhatsAppMessageButton number={u.sellerProfile?.whatsappNumber} messages={sellerMessages(u)} label="Message" compact />
+                     <form action={approveSeller} className="inline">
                       <input type="hidden" name="userId" value={u.id} />
                       <button className="bg-acid border-2 border-ink px-3 py-1 rounded-full text-xs font-black hover:shadow-brut-xs">Approve</button>
                     </form>
@@ -80,12 +96,12 @@ export default async function AdminSellersPage() {
 
       <section className="bg-white border-2 border-ink shadow-brut-lg rounded-2xl p-6">
         <h2 className="text-xl font-black uppercase mb-4">Approved Sellers ({approved.length})</h2>
-        <ul className="divide-y-2 divide-dashed divide-ink/20">
-          {approved.map((u) => (
-            <li key={u.id} className="py-3 flex justify-between items-center">
-              <span className="font-black">{u.name ?? u.email}</span>
-              <span className="text-xs font-bold uppercase text-gray-500">{u.email}</span>
-            </li>
+           <ul className="divide-y-2 divide-dashed divide-ink/20">
+             {approved.map((u) => (
+               <li key={u.id} className="py-3 flex flex-wrap justify-between items-center gap-3">
+                 <div><span className="font-black">{u.name ?? u.email}</span><span className="block text-xs font-bold uppercase text-gray-500">{u.email}</span></div>
+                 <WhatsAppMessageButton number={u.sellerProfile?.whatsappNumber} messages={sellerMessages(u)} label="Message" compact />
+               </li>
           ))}
         </ul>
       </section>
@@ -114,8 +130,9 @@ export default async function AdminSellersPage() {
                   <td className="py-3 text-sm font-black">{u.sellerProfile?.storeName ?? "—"}</td>
                   <td className="py-3 text-sm text-red-600">{u.sellerNote ?? "No reason provided"}</td>
                   <td className="py-3 text-xs text-gray-500">{new Date(u.updatedAt).toLocaleDateString()}</td>
-                  <td className="py-3 text-right space-x-2">
-                    <form action={approveSeller} className="inline">
+                   <td className="py-3 text-right space-x-2">
+                     <WhatsAppMessageButton number={u.sellerProfile?.whatsappNumber} messages={sellerMessages(u)} label="Message" compact />
+                     <form action={approveSeller} className="inline">
                       <input type="hidden" name="userId" value={u.id} />
                       <button className="bg-acid border-2 border-ink px-3 py-1 rounded-full text-xs font-black hover:shadow-brut-xs">Re-approve</button>
                     </form>

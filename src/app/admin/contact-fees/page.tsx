@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { approveContactFee, rejectContactFee } from "@/actions/auction-actions";
+import WhatsAppMessageButton from "@/components/admin/WhatsAppMessageButton";
+import { BUYER_TEMPLATES, resolveWhatsAppMessages, SELLER_TEMPLATES } from "@/lib/whatsapp-templates";
 
 export const revalidate = 0;
 
@@ -8,8 +10,8 @@ export default async function AdminContactFeesPage() {
     where: { status: "WAITING_VERIFICATION" },
     orderBy: { updatedAt: "desc" },
     include: {
-      buyer: { select: { name: true, email: true } },
-      seller: { select: { name: true, email: true } },
+      buyer: { select: { name: true, email: true, phone: true } },
+      seller: { select: { name: true, email: true, sellerProfile: { select: { storeName: true, whatsappNumber: true } } } },
       listing: { select: { title: true } },
     },
   });
@@ -25,9 +27,10 @@ export default async function AdminContactFeesPage() {
               <th className="pb-3 text-xs uppercase font-black text-gray-500">Order</th>
               <th className="pb-3 text-xs uppercase font-black text-gray-500">Buyer</th>
               <th className="pb-3 text-xs uppercase font-black text-gray-500">Item</th>
-              <th className="pb-3 text-xs uppercase font-black text-gray-500">Fee / App</th>
-              <th className="pb-3 text-xs uppercase font-black text-gray-500">Proof</th>
-              <th className="pb-3 text-xs uppercase font-black text-gray-500">Actions</th>
+               <th className="pb-3 text-xs uppercase font-black text-gray-500">Fee / App</th>
+               <th className="pb-3 text-xs uppercase font-black text-gray-500">Proof</th>
+               <th className="pb-3 text-xs uppercase font-black text-gray-500">WhatsApp</th>
+               <th className="pb-3 text-xs uppercase font-black text-gray-500">Actions</th>
             </tr></thead>
             <tbody>{orders.map((order) => (
               <tr key={order.id} className="border-b border-ink/10">
@@ -35,16 +38,47 @@ export default async function AdminContactFeesPage() {
                 <td className="py-3 text-sm">{order.buyer.name ?? order.buyer.email}</td>
                 <td className="py-3 text-sm font-black">{order.listing.title}</td>
                 <td className="py-3 text-sm font-black">₹{order.platformFee}<br /><span className="text-xs uppercase text-gray-500">{order.paidVia ?? "UPI"}</span></td>
-                <td className="py-3">
+                 <td className="py-3">
                   {order.proofUrl ? (
                     <a href={order.proofUrl} target="_blank" rel="noopener noreferrer">
                       <img src={order.proofUrl} alt="Payment proof" className="w-12 h-12 rounded-lg border-2 border-ink object-cover hover:scale-110 transition-transform" />
                     </a>
                   ) : (
                     <span className="text-xs text-gray-400 font-bold">No screenshot</span>
-                  )}
-                </td>
-                <td className="py-3 text-right space-x-2">
+                   )}
+                 </td>
+                 <td className="py-3">
+                   <div className="flex flex-wrap gap-1">
+                     <WhatsAppMessageButton
+                       number={order.buyerPhone ?? order.buyer.phone}
+                       label="Buyer"
+                       compact
+                       messages={resolveWhatsAppMessages(BUYER_TEMPLATES, {
+                         orderId: order.id,
+                         itemTitle: order.listing.title,
+                         buyerName: order.buyer.name ?? order.buyer.email,
+                         storeName: order.seller.sellerProfile?.storeName ?? order.seller.name ?? undefined,
+                         finalPrice: order.finalPrice,
+                         fee: order.platformFee,
+                         deadline: order.paymentDeadline ? new Date(order.paymentDeadline).toLocaleString("en-IN") : undefined,
+                       }).filter((message) => ["buyer-submit-proof", "buyer-fee-rejected", "buyer-fee-verified"].includes(message.id))}
+                     />
+                     <WhatsAppMessageButton
+                       number={order.seller.sellerProfile?.whatsappNumber}
+                       label="Seller"
+                       compact
+                       messages={resolveWhatsAppMessages(SELLER_TEMPLATES, {
+                         orderId: order.id,
+                         itemTitle: order.listing.title,
+                         sellerName: order.seller.name ?? order.seller.email,
+                         storeName: order.seller.sellerProfile?.storeName ?? undefined,
+                         finalPrice: order.finalPrice,
+                         fee: order.platformFee,
+                       }).filter((message) => message.id === "seller-fee-verified")}
+                     />
+                   </div>
+                 </td>
+                 <td className="py-3 text-right space-x-2">
                   <form action={approveContactFee} className="inline"><input type="hidden" name="orderId" value={order.id} /><button className="bg-acid border-2 border-ink px-3 py-1 rounded-full text-xs font-black">Approve</button></form>
                   <form action={rejectContactFee} className="inline"><input type="hidden" name="orderId" value={order.id} /><button className="bg-bubblegum border-2 border-ink px-3 py-1 rounded-full text-xs font-black">Reject</button></form>
                 </td>
