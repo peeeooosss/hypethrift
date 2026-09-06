@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -12,7 +13,7 @@ import { SearchIcon, FilterIcon } from "@/components/ui/Icons";
 
 import { CATEGORIES } from "@/data/categories";
 import type { CategoryId, Product } from "@/types";
-import FilterDrawer from "@/components/home/FilterDrawer";
+const FilterDrawer = dynamic(() => import("@/components/home/FilterDrawer"), { ssr: false });
 
 export default function LiveDropLandingPage({
   products,

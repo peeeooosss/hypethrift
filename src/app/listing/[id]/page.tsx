@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { createOrderFromListing } from "@/actions/auction-actions";
@@ -28,8 +29,7 @@ function timeRemaining(end: string) {
 export default async function ListingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const rawId = (await params).id;
   const id = decodeURIComponent(rawId);
-  const session = await auth();
-  const listing = await prisma.listing.findUnique({
+  const [session, listing] = await Promise.all([auth(), prisma.listing.findUnique({
     where: { id },
     include: {
       category: true,
@@ -41,7 +41,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
       },
       _count: { select: { upcomingVotes: true } },
     },
-  });
+  })]);
 
   if (!listing) notFound();
 
@@ -49,12 +49,6 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
   const isPublicStatus = ["ACTIVE", "UPCOMING", "ENDED", "SOLD"].includes(listing.status);
   const isOwnerOrAdmin = session?.user && (session.user.id === listing.sellerId || session.user.role === "ADMIN");
   if (!isPublicStatus && !isOwnerOrAdmin) notFound();
-  const isSaved = session?.user
-    ? (await prisma.savedItem.count({ where: { userId: session.user.id, listingId: id } })) > 0
-    : false;
-  const userVoted = session?.user
-    ? (await prisma.upcomingVote.count({ where: { listingId: id, userId: session.user.id } })) > 0
-    : false;
   const currentBid = listing.currentBid ?? listing.startingBid;
   const nextMin = currentBid + listing.bidIncrement;
   const endsMs = new Date(listing.endsAt).getTime();
@@ -62,16 +56,27 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
   const canBid =
     !!session?.user && session.user.role === "CUSTOMER" && listing.status === "ACTIVE" && !isEnded && session.user.id !== listing.sellerId;
 
-  const winningBid = isEnded
-    ? (await prisma.bid.findFirst({ where: { listingId: listing.id }, orderBy: [{ amount: "desc" }, { createdAt: "asc" }] })) ?? undefined
-    : undefined;
-
-  const existingOrder = isEnded && winningBid
-    ? await prisma.order.findUnique({
-        where: { listingId: listing.id },
-        select: { id: true, status: true, buyerId: true },
-      })
-    : null;
+  const [isSaved, userVoted, winningBid, existingOrder] = await Promise.all([
+    session?.user
+      ? prisma.savedItem.findUnique({ where: { userId_listingId: { userId: session.user.id, listingId: id } } }).then(Boolean)
+      : Promise.resolve(false),
+    session?.user
+      ? prisma.upcomingVote.findUnique({ where: { userId_listingId: { userId: session.user.id, listingId: id } } }).then(Boolean)
+      : Promise.resolve(false),
+    isEnded
+      ? prisma.bid.findFirst({
+          where: { listingId: listing.id },
+          orderBy: [{ amount: "desc" }, { createdAt: "asc" }],
+          select: { amount: true, bidderId: true },
+        }).then((result) => result ?? undefined)
+      : Promise.resolve(undefined),
+    isEnded
+      ? prisma.order.findUnique({
+          where: { listingId: listing.id },
+          select: { id: true, status: true, buyerId: true },
+        })
+      : Promise.resolve(null),
+  ]);
 
   return (
     <div className="space-y-8">
@@ -81,16 +86,14 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
           <div className="relative">
             {listing.images.length > 0 ? (
               <>
-                <div className="aspect-[4/3] rounded-2xl border-2 border-ink overflow-hidden mb-3">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={listing.images[0]} alt={listing.title} className="w-full h-full object-cover" />
+                <div className="relative aspect-[4/3] rounded-2xl border-2 border-ink overflow-hidden mb-3">
+                  <Image src={listing.images[0]} alt={listing.title} fill priority sizes="(max-width: 1024px) 100vw, 66vw" className="object-cover" />
                 </div>
                 {listing.images.length > 1 && (
                   <div className="flex flex-wrap gap-2 mb-4">
                     {listing.images.slice(1).map((src, i) => (
-                      <div key={src + i} className="w-16 h-16 rounded-xl border-2 border-ink overflow-hidden">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={src} alt={`${listing.title} photo ${i + 2}`} className="w-full h-full object-cover" />
+                      <div key={src + i} className="relative w-16 h-16 rounded-xl border-2 border-ink overflow-hidden">
+                        <Image src={src} alt={`${listing.title} photo ${i + 2}`} fill sizes="64px" className="object-cover" />
                       </div>
                     ))}
                   </div>

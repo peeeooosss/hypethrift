@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import Confetti from "@/components/ui/Confetti";
 import { placeBid } from "@/actions/listing-actions";
 import { ArrowRightIcon, BadgeCheckIcon, HeartIcon, TrendingUpIcon, ShareIcon, StarIcon } from "@/components/ui/Icons";
@@ -17,25 +18,17 @@ export default function BiddingCard({ product }: { product: Product }) {
   const [showConfetti, setShowConfetti] = useState(false);
   const [bidPlaced, setBidPlaced] = useState(false);
   const [currentBid, setCurrentBid] = useState(product.bid);
-  const [viewers, setViewers] = useState(product.viewers);
+  const [viewers] = useState(product.viewers);
   const [state, action] = useActionState(placeBid, null);
 
   useEffect(() => {
     setTime(product.time);
     setCurrentBid(product.bid);
-    setViewers(product.viewers);
     setBidPlaced(false);
   }, [product.id, product.time, product.bid, product.viewers]);
 
   useEffect(() => {
     const timer = setInterval(() => setTime((prev) => (prev > 0 ? prev - 1 : 0)), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setViewers((prev) => Math.max(50, prev + Math.floor(Math.random() * 7) - 3));
-    }, 2500);
     return () => clearInterval(timer);
   }, []);
 
@@ -82,8 +75,14 @@ export default function BiddingCard({ product }: { product: Product }) {
             style={{ backgroundColor: product.bg }}
           >
             {product.image ? (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img src={product.image} alt={product.name} className="absolute inset-0 w-full h-full object-cover" />
+              <Image
+                src={product.image}
+                alt={product.name}
+                fill
+                priority
+                sizes="(max-width: 768px) 224px, 320px"
+                className="object-cover"
+              />
             ) : (
               <div className="text-8xl md:text-9xl opacity-80 select-none">{product.emoji}</div>
             )}

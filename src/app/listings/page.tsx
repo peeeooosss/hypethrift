@@ -45,10 +45,11 @@ export default async function ListingsIndexPage({
   };
 
   const session = await auth();
-  const [listings, categories, savedIds, sizeRows, upcoming] = await Promise.all([
+  const [listings, categories, savedIds, sizeRows, upcoming, upcomingVotes] = await Promise.all([
     prisma.listing.findMany({
       where,
       orderBy: { createdAt: "desc" },
+      take: 24,
       include: { category: true },
     }),
     prisma.category.findMany({ where: { slug: { not: "all" } }, orderBy: { name: "asc" } }),
@@ -61,18 +62,22 @@ export default async function ListingsIndexPage({
     prisma.listing.findMany({
       where: upcomingWhere,
       orderBy: [{ startsAt: "asc" }, { createdAt: "desc" }],
+      take: 12,
       include: {
         category: true,
         seller: { select: { name: true, email: true } },
         _count: { select: { upcomingVotes: true } },
       },
     }),
+    session
+      ? prisma.upcomingVote.findMany({ where: { userId: session.user.id }, select: { listingId: true } })
+      : Promise.resolve([]),
   ]);
+  const upcomingVoteIds = new Set(upcomingVotes.map((vote) => vote.listingId));
   const configuredSizes = getSizesForCategory(effectiveCat);
   const listedSizes = new Set(sizeRows.map((row) => row.size).filter((size): size is string => !!size));
   const availableSizes = configuredSizes.filter((size) => listedSizes.has(size));
-  const upcomingItems: UpcomingItem[] = await Promise.all(
-    upcoming.map(async (l) => ({
+  const upcomingItems: UpcomingItem[] = upcoming.map((l) => ({
       listingId: l.id,
       title: l.title,
       image: l.images[0] ?? null,
@@ -82,13 +87,10 @@ export default async function ListingsIndexPage({
       sellerName: l.seller.name ?? l.seller.email,
       startsAtIso: l.startsAt?.toISOString() ?? null,
       voteCount: l._count.upcomingVotes,
-      userVoted: session?.user
-        ? (await prisma.upcomingVote.count({ where: { listingId: l.id, userId: session.user.id } })) > 0
-        : false,
+      userVoted: upcomingVoteIds.has(l.id),
       isSeller: session?.user ? session.user.id === l.sellerId : false,
       signedIn: !!session?.user,
-    })),
-  );
+    }));
 
   return (
     <div className="min-h-screen bg-cream text-ink py-10 pb-24">

@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { SessionProvider } from "next-auth/react";
-import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import "@/styles/globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import { getLiveCount } from "@/lib/public-data";
 
 export const metadata: Metadata = {
   title: "HypeThrift - Live Drops by Category",
@@ -21,10 +21,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const liveCount = await prisma.listing.count({
-    where: { status: "ACTIVE", endsAt: { gt: new Date() } },
-  });
-  const session = await auth();
+  const [liveCount, session] = await Promise.all([getLiveCount(), auth()]);
 
   return (
     <html lang="en">

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useMemo, useState } from "react";
 import { useActionState } from "react";
 import { toggleRequestLive } from "@/actions/listing-actions";
@@ -89,10 +90,15 @@ export default function UpcomingSection({ items }: { items: UpcomingItem[] }) {
             className="bg-white border-2 border-ink shadow-brut-lg rounded-2xl overflow-hidden flex flex-col"
           >
             <Link href={`/listing/${encodeURIComponent(item.listingId)}`} className="block">
-              <div className={`aspect-square ${item.bg}`}>
+              <div className={`relative aspect-square ${item.bg}`}>
                 {item.image ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+                  <Image
+                    src={item.image}
+                    alt={item.title}
+                    fill
+                    sizes="(max-width: 768px) 50vw, (max-width: 1280px) 25vw, 300px"
+                    className="object-cover"
+                  />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-6xl">{item.emoji}</div>
                 )}

@@ -1,7 +1,18 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import Image from "next/image";
 import SaveButton from "@/components/listing/SaveButton";
+
+type LiveAuctionListing = {
+  id: string;
+  title: string;
+  images: string[];
+  currentBid: number | null;
+  startingBid: number;
+  bidCount: number;
+  size: string | null;
+  endsAt: Date;
+  category: { emoji: string };
+};
 
 function money(n: number | null | undefined) {
   if (n == null) return "—";
@@ -14,22 +25,15 @@ function endsIn(minutes: number) {
   return `${Math.floor(minutes / 60)}h ${Math.floor(minutes % 60)}m`;
 }
 
-export default async function LiveAuctionsStrip() {
-  const session = await auth();
-  const [listings, savedIds] = await Promise.all([
-    prisma.listing.findMany({
-      where: { status: "ACTIVE", endsAt: { gt: new Date() } },
-      orderBy: { currentBid: { sort: "desc" } },
-      include: { category: true },
-      take: 6,
-    }),
-    session
-      ? prisma.savedItem
-          .findMany({ where: { userId: session.user.id }, select: { listingId: true } })
-          .then((r) => new Set(r.map((x) => x.listingId)))
-      : Promise.resolve(new Set<string>()),
-  ]);
-
+export default async function LiveAuctionsStrip({
+  listings,
+  savedIds,
+  signedIn,
+}: {
+  listings: LiveAuctionListing[];
+  savedIds: Set<string>;
+  signedIn: boolean;
+}) {
   if (listings.length === 0) return null;
 
   return (
@@ -50,16 +54,21 @@ export default async function LiveAuctionsStrip() {
           const href = `/listing/${encodeURIComponent(l.id)}`;
           return (
             <div key={l.id} className="bg-white border-2 border-ink shadow-brut-lg rounded-3xl p-4 aspect-[4/5] flex flex-col relative group">
-              {session?.user && (
+              {signedIn && (
                 <div className="absolute top-1 right-1 z-10">
                   <SaveButton listingId={l.id} initiallySaved={savedIds.has(l.id)} size="sm" />
                 </div>
               )}
               <Link href={href} className="group">
-                <div className="flex-1 flex items-center justify-center text-4xl mb-3 overflow-hidden rounded-2xl">
+                <div className="relative flex-1 flex items-center justify-center text-4xl mb-3 overflow-hidden rounded-2xl">
                   {l.images?.[0] ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img src={l.images[0]} alt={l.title} className="w-full h-full object-cover aspect-square" />
+                    <Image
+                      src={l.images[0]}
+                      alt={l.title}
+                      fill
+                      sizes="(max-width: 768px) 50vw, (max-width: 1280px) 16vw, 180px"
+                      className="object-cover"
+                    />
                   ) : (
                     l.category.emoji
                   )}

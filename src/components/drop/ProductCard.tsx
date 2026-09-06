@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { BadgeCheckIcon, EyeIcon } from "@/components/ui/Icons";
 import { formatTime, formatBid } from "@/utils/formatters";
 import type { Product } from "@/types";
@@ -16,7 +17,7 @@ export default function ProductCard({ product, onClick, index }: ProductCardProp
   const [time, setTime] = useState(product.time);
 
   useEffect(() => {
-    const timer = setInterval(() => setTime((prev) => (prev > 0 ? prev - 1 : 0)), 1000);
+    const timer = setInterval(() => setTime((prev) => Math.max(0, prev - 10)), 10000);
     return () => clearInterval(timer);
   }, []);
 
@@ -28,7 +29,7 @@ export default function ProductCard({ product, onClick, index }: ProductCardProp
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.9 }}
-      transition={{ duration: 0.3, delay: index * 0.05 }}
+      transition={{ duration: 0.2, delay: Math.min(index * 0.015, 0.15) }}
       whileHover={{ y: -4 }}
       onClick={() => onClick(product)}
       className="group bg-white border-2 border-ink shadow-brut-lg rounded-2xl overflow-hidden cursor-pointer transition-shadow hover:shadow-brut-xl"
@@ -36,8 +37,13 @@ export default function ProductCard({ product, onClick, index }: ProductCardProp
       {/* Image */}
       <div className="relative aspect-square flex items-center justify-center overflow-hidden" style={{ backgroundColor: product.bg }}>
         {product.image ? (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img src={product.image} alt={product.name} className="absolute inset-0 w-full h-full object-cover" />
+          <Image
+            src={product.image}
+            alt={product.name}
+            fill
+            sizes="(max-width: 768px) 50vw, (max-width: 1280px) 25vw, 300px"
+            className="object-cover"
+          />
         ) : (
           <div className="text-7xl md:text-8xl group-hover:scale-110 transition-transform duration-300">{product.emoji}</div>
         )}
