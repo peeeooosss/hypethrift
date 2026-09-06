@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { launchUpcoming, removeUpcoming, promoteDraftToUpcoming } from "@/actions/listing-actions";
+import ShareButton from "@/components/seller/ShareButton";
 
 export const revalidate = 0;
 
@@ -124,6 +125,15 @@ export default async function SellerUpcomingPage() {
                   <Link href={`/listing/${encodeURIComponent(l.id)}`} className="text-xs font-black text-gray-500 hover:text-ink ml-auto">
                     View page →
                   </Link>
+                </div>
+
+                <div className="flex items-center gap-2 mb-4">
+                  <ShareButton
+                    listingId={l.id}
+                    title={l.title}
+                    price={l.currentBid ?? l.startingBid}
+                    status={l.status as string}
+                  />
                 </div>
 
                 <div className="flex gap-2 mt-auto pt-3 border-t-2 border-dashed border-ink/20">

@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { LISTING_PACKAGES, upiLinks } from "@/lib/platform";
+import { LISTING_PACKAGES, upiLinks, FREE_LISTINGS } from "@/lib/platform";
 import { requestListingCredits } from "@/actions/credit-actions";
 
 export const revalidate = 0;
@@ -16,10 +16,16 @@ export default async function SellerCreditsPage({
   if (session.user.role !== "SELLER") redirect("/account");
   const { error } = await searchParams;
 
-  const [profile, purchases] = await Promise.all([
-    prisma.user.findUnique({ where: { id: session.user.id }, select: { listingCredits: true } }),
+  const [profileRows, purchases] = await Promise.all([
+    prisma.$queryRaw<{ listingCredits: number; freeListingsGranted: boolean }[]>`
+      SELECT "listingCredits", "freeListingsGranted"
+      FROM "User"
+      WHERE id = ${session.user.id}
+      LIMIT 1
+    `,
     prisma.creditPurchase.findMany({ where: { userId: session.user.id }, orderBy: { createdAt: "desc" }, take: 12 }),
   ]);
+  const profile = profileRows[0];
 
   return (
     <div className="space-y-8">
@@ -33,6 +39,17 @@ export default async function SellerCreditsPage({
         <p className="text-red-600 font-black bg-red-50 border-2 border-red-200 rounded-xl py-3 px-4">
           You need a listing credit to launch a drop. Buy credits below, then try again.
         </p>
+      )}
+
+      {profile?.freeListingsGranted && (
+        <div className="bg-acid/15 border-2 border-acid rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
+          <p className="text-sm font-bold text-gray-700">
+            🎁 Your first {FREE_LISTINGS} listings were part of your seller welcome bonus{profile.listingCredits > 0 ? " — you still have some left." : " — all used up."}
+          </p>
+          <span className="text-xs font-black uppercase bg-ink text-white rounded-full px-3 py-1 flex-shrink-0">
+            {profile.listingCredits} left
+          </span>
+        </div>
       )}
 
       <div className="grid md:grid-cols-3 gap-5">

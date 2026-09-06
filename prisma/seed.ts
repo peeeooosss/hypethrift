@@ -135,7 +135,7 @@ const PAST_BIDS: DemoBid[] = [
   ["seed-past-bid-varsity-riya", "seed-past-Varsity Jacket", "riya", 6200],
 ];
 
-async function upsertUser(data: { email: string; password: string; name: string; role: string; sellerStatus?: string; listingCredits?: number }) {
+async function upsertUser(data: { email: string; password: string; name: string; role: string; sellerStatus?: string; listingCredits?: number; freeListingsGranted?: boolean }) {
   return prisma.user.upsert({
     where: { email: data.email },
     update: {
@@ -144,6 +144,7 @@ async function upsertUser(data: { email: string; password: string; name: string;
       role: data.role as any,
       sellerStatus: data.sellerStatus as any,
       listingCredits: data.listingCredits,
+      freeListingsGranted: data.freeListingsGranted ?? false,
       isBanned: false,
     },
     create: {
@@ -153,6 +154,7 @@ async function upsertUser(data: { email: string; password: string; name: string;
       role: data.role as any,
       sellerStatus: data.sellerStatus as any,
       listingCredits: data.listingCredits ?? 0,
+      freeListingsGranted: data.freeListingsGranted ?? false,
     },
   });
 }
@@ -244,6 +246,7 @@ async function main() {
       role: "SELLER",
       sellerStatus: "APPROVED",
       listingCredits: 10,
+      freeListingsGranted: true,
     });
     sellers[sellerData.key] = seller;
     await prisma.sellerProfile.upsert({

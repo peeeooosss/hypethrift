@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { deleteListing, launchUpcoming, removeUpcoming } from "@/actions/listing-actions";
 import { closeAuction } from "@/actions/auction-actions";
+import ShareButton from "@/components/seller/ShareButton";
 
 export const revalidate = 0;
 
@@ -117,7 +118,14 @@ export default async function SellerListingsPage() {
                         </span>
                       )}
                     </td>
-                    <td className="py-3 text-right space-x-1">
+                    <td className="py-3 text-right space-x-1 space-y-1">
+                      <ShareButton
+                        compact
+                        listingId={l.id}
+                        title={l.title}
+                        price={l.currentBid ?? l.startingBid}
+                        status={l.status as string}
+                      />
                       {!["ENDED", "SOLD", "REJECTED"].includes(l.status) && (
                         <Link
                           href={`/seller/listings/${encodeURIComponent(l.id)}/edit`}

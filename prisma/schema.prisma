@@ -100,6 +100,7 @@ model User {
   phone         String?
   whatsappNumber String?
   listingCredits Int          @default(0)
+  freeListingsGranted Boolean @default(false)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 

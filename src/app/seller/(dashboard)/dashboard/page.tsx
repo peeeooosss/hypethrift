@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { launchUpcoming, removeUpcoming, promoteDraftToUpcoming } from "@/actions/listing-actions";
+import { FREE_LISTINGS } from "@/lib/platform";
+import ShareButton from "@/components/seller/ShareButton";
 
 export const revalidate = 0;
 
@@ -11,7 +13,13 @@ export default async function SellerDashboardPage() {
   if (!session?.user || (session.user.role !== "SELLER" && session.user.role !== "ADMIN")) redirect("/seller");
 
   const sellerId = session.user.id;
-  const [listings, upcomingListings, draftListings, totalBids, recentOrders] = await Promise.all([
+  const [userRows, listings, upcomingListings, draftListings, totalBids, recentOrders] = await Promise.all([
+    prisma.$queryRaw<{ listingCredits: number; freeListingsGranted: boolean }[]>`
+      SELECT "listingCredits", "freeListingsGranted"
+      FROM "User"
+      WHERE id = ${sellerId}
+      LIMIT 1
+    `,
     prisma.listing.findMany({
       where: { sellerId },
       orderBy: { createdAt: "desc" },
@@ -34,6 +42,7 @@ export default async function SellerDashboardPage() {
     prisma.bid.count({ where: { listing: { sellerId } } }),
     prisma.order.findMany({ where: { sellerId }, orderBy: { createdAt: "desc" }, take: 5 }),
   ]);
+  const user = userRows[0];
 
   const upcomingCount = upcomingListings.length;
   const stats = [
@@ -54,6 +63,24 @@ export default async function SellerDashboardPage() {
           + New Drop
         </Link>
       </div>
+
+      {user?.freeListingsGranted && (
+        <div className="bg-acid/15 border-2 border-acid rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
+          <div>
+            <p className="font-black uppercase text-sm">🎁 New seller bonus — first {FREE_LISTINGS} listings on us</p>
+            <p className="text-xs font-bold text-gray-600 mt-0.5">
+              {user.listingCredits} listing credit{user.listingCredits !== 1 ? "s" : ""} remaining.
+              Use them before they&apos;re gone.
+            </p>
+          </div>
+          <Link
+            href="/seller/credits"
+            className="bg-ink text-white border-2 border-ink px-4 py-2 rounded-xl text-xs font-black uppercase hover:bg-acid hover:text-ink transition-colors flex-shrink-0"
+          >
+            View credits
+          </Link>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {stats.map((s) => (
@@ -211,11 +238,22 @@ export default async function SellerDashboardPage() {
         ) : (
           <ul className="divide-y-2 divide-dashed divide-ink/20">
             {listings.map((listing) => (
-              <li key={listing.id} className="py-3 flex justify-between items-center">
+              <li key={listing.id} className="py-3 flex justify-between items-center gap-4">
                 <span className="font-black">{listing.title}</span>
-                <span className="text-xs font-bold uppercase text-gray-500">
-                  {listing.status}
-                  {listing.status === "UPCOMING" && ` · ${listing._count.upcomingVotes} requests`}
+                <span className="flex items-center gap-3">
+                  {["ACTIVE", "UPCOMING", "ENDED", "SOLD"].includes(listing.status) && (
+                    <ShareButton
+                      compact
+                      listingId={listing.id}
+                      title={listing.title}
+                      price={listing.currentBid ?? listing.startingBid}
+                      status={listing.status as string}
+                    />
+                  )}
+                  <span className="text-xs font-bold uppercase text-gray-500">
+                    {listing.status}
+                    {listing.status === "UPCOMING" && ` · ${listing._count.upcomingVotes} requests`}
+                  </span>
                 </span>
               </li>
             ))}

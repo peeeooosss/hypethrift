@@ -6,7 +6,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { slugify } from "@/lib/utils";
-import { ITEM_PAYMENT_WINDOW_HOURS } from "@/lib/platform";
+import { ITEM_PAYMENT_WINDOW_HOURS, FREE_LISTINGS } from "@/lib/platform";
 
 type UserRole = "CUSTOMER" | "SELLER" | "ADMIN";
 
@@ -52,8 +52,21 @@ export async function approveSeller(formData: FormData) {
     where: { id: userId },
     data: { role: "SELLER", sellerStatus: "APPROVED", sellerNote: null },
   });
+  await grantFreeListings(userId);
   revalidatePath("/admin/sellers");
   redirect("/admin/sellers");
+}
+
+// Grants the one-time seller welcome bonus (2 free listings) atomically,
+// so re-approving a rejected seller never double-grants.
+async function grantFreeListings(userId: string) {
+  await prisma.$executeRaw`
+    UPDATE "User"
+    SET "listingCredits" = "listingCredits" + ${FREE_LISTINGS},
+        "freeListingsGranted" = true,
+        "updatedAt" = NOW()
+    WHERE id = ${userId} AND "freeListingsGranted" = false
+  `;
 }
 
 export async function rejectSeller(formData: FormData) {
@@ -87,6 +100,7 @@ export async function changeUserRole(formData: FormData) {
     where: { id: userId },
     data: { role: role as UserRole, sellerStatus: role === "SELLER" ? "APPROVED" : null },
   });
+  if (role === "SELLER") await grantFreeListings(userId);
   revalidatePath("/admin/users");
 }
 
