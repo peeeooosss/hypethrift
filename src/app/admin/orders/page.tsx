@@ -151,7 +151,7 @@ export default async function AdminOrdersPage({
                 : order.paymentDeadline
                   ? new Date(order.paymentDeadline).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })
                   : undefined,
-              buyerPhone: order.buyerPhone ?? order.buyer?.phone,
+              buyerPhone: order.buyerPhone ?? order.buyer?.phone ?? undefined,
               sellerWhatsApp: order.seller?.sellerProfile?.whatsappNumber,
             };
 
