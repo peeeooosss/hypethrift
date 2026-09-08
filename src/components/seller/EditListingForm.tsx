@@ -21,6 +21,7 @@ export interface EditListingData {
   condition: string | null;
   images: string[];
   status: string;
+  durationHours: number;
 }
 
 interface EditListingFormProps {
@@ -44,7 +45,7 @@ export default function EditListingForm({ listing, categories }: EditListingForm
       <h1 className="text-2xl font-black uppercase mb-2">Edit Drop</h1>
       {listing.status === "ACTIVE" && (
         <p className="mb-4 text-xs font-bold bg-bubblegum/30 border-2 border-bubblegum rounded-xl py-2 px-3">
-          This auction is live with no bids yet. Saving your changes resets the timer to 24 hours.
+          This auction is live with no bids yet. Saving your changes resets the timer to your chosen duration.
         </p>
       )}
 
@@ -150,7 +151,7 @@ export default function EditListingForm({ listing, categories }: EditListingForm
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs uppercase font-bold text-gray-500 tracking-widest mb-1">Starting Bid (₹)</label>
             <input name="startingBid" type="number" required min={1} defaultValue={listing.startingBid}
@@ -179,6 +180,22 @@ export default function EditListingForm({ listing, categories }: EditListingForm
               <option value="GOOD">Good</option>
               <option value="FAIR">Fair</option>
             </select>
+          </div>
+          <div>
+            <label className="block text-xs uppercase font-bold text-gray-500 tracking-widest mb-1">Auction Duration</label>
+            <select name="duration" defaultValue={listing.durationHours}
+              className="w-full bg-white border-2 border-ink rounded-xl px-4 py-3 font-bold text-sm focus:outline-none focus:shadow-brut-sm">
+              <option value="1">1 hour</option>
+              <option value="4">4 hours</option>
+              <option value="12">12 hours</option>
+              <option value="24">24 hours</option>
+              <option value="48">2 days</option>
+              <option value="72">3 days</option>
+              <option value="168">7 days</option>
+              <option value="336">14 days</option>
+              <option value="720">30 days</option>
+            </select>
+            <p className="text-[11px] text-gray-500 font-bold mt-1">From 1 hour up to 30 days. Changing the duration on a live auction resets its timer.</p>
           </div>
         </div>
 

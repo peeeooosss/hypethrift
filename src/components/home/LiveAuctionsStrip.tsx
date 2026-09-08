@@ -10,7 +10,7 @@ type LiveAuctionListing = {
   startingBid: number;
   bidCount: number;
   size: string | null;
-  endsAt: Date;
+  endsAt: string;
   category: { emoji: string };
 };
 

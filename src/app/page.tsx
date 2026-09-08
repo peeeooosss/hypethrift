@@ -31,12 +31,12 @@ export default async function HomePage() {
     bg: listing.category.color,
     image: listing.images[0] ?? null,
     bid: listing.currentBid ?? listing.startingBid,
-    time: Math.max(0, Math.floor((listing.endsAt.getTime() - Date.now()) / 1000)),
+    time: Math.max(0, Math.floor((new Date(listing.endsAt).getTime() - Date.now()) / 1000)),
     bids: listing.bidCount,
     viewers: listing.views,
     verified: listing.verified,
     hot: listing.hot,
-    featured: Boolean(listing.featuredUntil && listing.featuredUntil > now),
+    featured: Boolean(listing.featuredUntil && new Date(listing.featuredUntil) > now),
   }));
 
   const upcomingItems = upcoming.map((l) => ({
@@ -47,7 +47,7 @@ export default async function HomePage() {
     bg: l.category.color,
     categorySlug: l.category.slug,
     sellerName: l.seller.name ?? l.seller.email,
-    startsAtIso: l.startsAt ? l.startsAt.toISOString() : null,
+    startsAtIso: l.startsAt,
     voteCount: l._count.upcomingVotes,
     userVoted: upcomingVoteIds.has(l.id),
     isSeller: session?.user ? session.user.id === l.sellerId : false,

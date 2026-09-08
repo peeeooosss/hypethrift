@@ -132,7 +132,7 @@ export async function approveListing(formData: FormData) {
 
   const listing = await prisma.listing.findUnique({
     where: { id: listingId },
-    select: { sellerId: true, status: true, upcomingIntent: true },
+    select: { sellerId: true, status: true, upcomingIntent: true, durationHours: true },
   });
   if (!listing || listing.status !== "PENDING_REVIEW") return;
 
@@ -150,7 +150,11 @@ export async function approveListing(formData: FormData) {
 
       await tx.listing.update({
         where: { id: listingId },
-        data: { status: "ACTIVE", verified: true },
+        data: {
+          status: "ACTIVE",
+          verified: true,
+          endsAt: new Date(Date.now() + listing.durationHours * 60 * 60 * 1000),
+        },
       });
     } else {
       const upcomingCount = await tx.listing.count({

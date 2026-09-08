@@ -24,6 +24,7 @@ export default async function EditListingPage({ params }: { params: Promise<{ id
         condition: true,
         images: true,
         status: true,
+        durationHours: true,
         bidCount: true,
       },
     }),
@@ -59,6 +60,7 @@ export default async function EditListingPage({ params }: { params: Promise<{ id
             condition: listing.condition,
             images: listing.images,
             status: listing.status,
+            durationHours: listing.durationHours,
           }}
           categories={categories}
         />

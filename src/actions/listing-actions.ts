@@ -18,7 +18,7 @@ async function requireSeller() {
   return { id: session.user.id, role: session.user.role };
 }
 
-const DURATION_OPTIONS = [1, 4, 12, 24, 48, 72, 168, 336, 720] as const;
+export const DURATION_OPTIONS = [1, 4, 12, 24, 48, 72, 168, 336, 720] as const;
 
 const listingSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
@@ -141,6 +141,7 @@ export async function createListing(prevState: { error?: string; success?: boole
       status,
       startsAt: scheduledAt,
       upcomingIntent: isUpcomingIntent,
+      durationHours: duration,
       endsAt: new Date(Date.now() + duration * 60 * 60 * 1000),
     },
   });
@@ -170,6 +171,7 @@ const editListingSchema = z.object({
   reservePrice: z.coerce.number().int().optional().or(z.literal("").transform(() => undefined)),
   size: z.string().min(1, "Select a size"),
   condition: z.enum(["NEW", "LIKE_NEW", "EXCELLENT", "GOOD", "FAIR"]).optional(),
+  duration: z.enum(["1", "4", "12", "24", "48", "72", "168", "336", "720"]).transform(Number),
 });
 
 export async function updateListing(prevState: { error?: string; success?: boolean } | null, formData: FormData) {
@@ -210,10 +212,11 @@ export async function updateListing(prevState: { error?: string; success?: boole
     reservePrice: formData.get("reservePrice"),
     size: formData.get("size"),
     condition: formData.get("condition"),
+    duration: formData.get("duration"),
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
 
-  const { title, description, categoryId, startingBid, reservePrice, size, condition } = parsed.data;
+  const { title, description, categoryId, startingBid, reservePrice, size, condition, duration } = parsed.data;
   if (reservePrice !== undefined && reservePrice < startingBid) {
     return { error: "Reserve price must be higher than the starting bid" };
   }
@@ -236,9 +239,10 @@ export async function updateListing(prevState: { error?: string; success?: boole
       reservePrice: reservePrice ?? null,
       size,
       condition: condition ? (condition as ListingConditionType) : null,
+      durationHours: duration,
       // Editing a live listing with no bids resets its clock so buyers see a
       // fair auction; draft/pending listings keep their original schedule.
-      ...(existing.status === "ACTIVE" ? { endsAt: new Date(Date.now() + 24 * 60 * 60 * 1000) } : {}),
+      ...(existing.status === "ACTIVE" ? { endsAt: new Date(Date.now() + duration * 60 * 60 * 1000) } : {}),
     },
   });
 
@@ -358,7 +362,7 @@ export async function launchUpcoming(formData: FormData) {
 
   const listing = await prisma.listing.findUnique({
     where: { id: listingId },
-    select: { id: true, sellerId: true, status: true, endsAt: true },
+    select: { id: true, sellerId: true, status: true, durationHours: true },
   });
   if (!listing || listing.sellerId !== seller.id) return { error: "Listing not found" };
   if (listing.status !== "UPCOMING") return { error: "This listing is not upcoming" };
@@ -383,7 +387,7 @@ export async function launchUpcoming(formData: FormData) {
         status: "ACTIVE",
         upcomingIntent: false,
         startsAt: new Date(),
-        endsAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        endsAt: new Date(Date.now() + listing.durationHours * 60 * 60 * 1000),
       },
     });
     return true;

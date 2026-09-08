@@ -7,6 +7,15 @@ import ShareButton from "@/components/seller/ShareButton";
 
 export const revalidate = 0;
 
+function formatDuration(hours: number) {
+  if (hours < 24) return hours === 1 ? "1 hour" : `${hours} hours`;
+  if (hours % 24 === 0) {
+    const days = hours / 24;
+    return days === 1 ? "1 day" : `${days} days`;
+  }
+  return `${hours} hours`;
+}
+
 export default async function SellerListingsPage() {
   const session = await auth();
   const [listings, total] = await Promise.all([
@@ -69,6 +78,7 @@ export default async function SellerListingsPage() {
                 <th className="pb-3 text-xs uppercase font-black text-gray-500">Bid</th>
                 <th className="pb-3 text-xs uppercase font-black text-gray-500">Condition</th>
                 <th className="pb-3 text-xs uppercase font-black text-gray-500">Size</th>
+                <th className="pb-3 text-xs uppercase font-black text-gray-500">Duration</th>
                 <th className="pb-3 text-xs uppercase font-black text-gray-500">Status</th>
                 <th className="pb-3 text-xs uppercase font-black text-right">Actions</th>
               </tr>
@@ -107,6 +117,7 @@ export default async function SellerListingsPage() {
                     <td className="py-3 text-sm font-black">₹{l.currentBid ?? l.startingBid}</td>
                     <td className="py-3 text-sm text-gray-600">{l.condition?.replace("_", " ") ?? "—"}</td>
                     <td className="py-3 text-sm font-black uppercase">{l.size ?? "—"}</td>
+                    <td className="py-3 text-sm text-gray-600">{formatDuration(l.durationHours)}</td>
                     <td className="py-3">
                       <span className={`inline-block px-2 py-1 rounded-xl text-xs font-black ${s.color}`}>
                         {s.label}

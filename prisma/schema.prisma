@@ -164,6 +164,7 @@ model Listing {
   hot           Boolean       @default(false)
   endsAt        DateTime
   startsAt      DateTime?
+  durationHours Int           @default(24)
   upcomingIntent Boolean      @default(false)
   views         Int           @default(0)
    watchers      Int           @default(0)

@@ -177,6 +177,7 @@ async function upsertListing(
     status?: string;
     images?: string[];
     startsAt?: Date;
+    endHoursFromNow?: number;
   },
   sellers: Record<string, { id: string }>,
   endsAt: Date,
@@ -201,6 +202,7 @@ async function upsertListing(
       watchers: listing.watchers ?? 0,
       ...(listing.startsAt ? { startsAt: listing.startsAt } : {}),
       endsAt,
+      durationHours: listing.endHoursFromNow ?? 24,
     },
     create: {
       id: listing.id,
@@ -221,6 +223,7 @@ async function upsertListing(
       bidCount: listing.bidCount ?? 0,
       views: listing.views ?? 0,
       watchers: listing.watchers ?? 0,
+      durationHours: listing.endHoursFromNow ?? 24,
       ...(listing.startsAt ? { startsAt: listing.startsAt } : {}),
       endsAt,
     },
