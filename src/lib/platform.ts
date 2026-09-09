@@ -4,6 +4,8 @@ export const CONTACT_FEE = 69;
 export const ITEM_PAYMENT_WINDOW_HOURS = 48;
 export const FREE_LISTINGS = 2;
 
+export const DURATION_OPTIONS = [1, 4, 12, 24, 48, 72, 168, 336, 720] as const;
+
 export const LISTING_PACKAGES = [
   { id: "one", label: "1 listing", credits: 1, amount: 99 },
   { id: "three", label: "3 listings", credits: 3, amount: 249 },

@@ -18,8 +18,6 @@ async function requireSeller() {
   return { id: session.user.id, role: session.user.role };
 }
 
-export const DURATION_OPTIONS = [1, 4, 12, 24, 48, 72, 168, 336, 720] as const;
-
 const listingSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
   description: z.string().min(10, "Description is too short"),
