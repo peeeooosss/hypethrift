@@ -5,9 +5,10 @@ import { UploadButton } from "@/components/ui/UploadThing";
 
 interface ProofUploadProps {
   onUploadComplete: (url: string) => void;
+  helperText?: string;
 }
 
-export default function ProofUpload({ onUploadComplete }: ProofUploadProps) {
+export default function ProofUpload({ onUploadComplete, helperText }: ProofUploadProps) {
   const [proofUrl, setProofUrl] = useState<string | null>(null);
 
   return (
@@ -29,7 +30,7 @@ export default function ProofUpload({ onUploadComplete }: ProofUploadProps) {
         </div>
       ) : (
         <div>
-          <p className="text-xs font-bold text-gray-500 mb-2">Upload a screenshot of your ₹69 payment (optional but recommended)</p>
+          <p className="text-xs font-bold text-gray-500 mb-2">{helperText ?? "Upload a screenshot of your ₹69 payment (optional but recommended)"}</p>
           <UploadButton
             endpoint="proof"
             onClientUploadComplete={(res) => {

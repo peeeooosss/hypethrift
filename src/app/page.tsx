@@ -25,6 +25,8 @@ export default async function HomePage() {
   const products: Product[] = listings.map((listing, index) => ({
     id: index + 1,
     listingId: listing.id,
+    listingMode: listing.listingMode,
+    buyNowPrice: listing.buyNowPrice,
     category: listing.category.slug as Product["category"],
     name: listing.title,
     emoji: listing.category.emoji,
@@ -38,6 +40,9 @@ export default async function HomePage() {
     hot: listing.hot,
     featured: Boolean(listing.featuredUntil && new Date(listing.featuredUntil) > now),
   }));
+
+  const auctionProducts = products.filter((p) => p.listingMode === "AUCTION" || p.listingMode === "BOTH");
+  const retailProducts = products.filter((p) => p.listingMode === "RETAIL" || p.listingMode === "BOTH");
 
   const upcomingItems = upcoming.map((l) => ({
     listingId: l.id,

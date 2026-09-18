@@ -22,6 +22,8 @@ export default function ProductCard({ product, onClick, index }: ProductCardProp
   }, []);
 
   const isEndingSoon = time < 1800;
+  const isRetail = product.listingMode === "RETAIL" || product.listingMode === "BOTH";
+  const price = isRetail ? (product.buyNowPrice ?? product.bid) : product.bid;
 
   return (
     <motion.div
@@ -51,6 +53,11 @@ export default function ProductCard({ product, onClick, index }: ProductCardProp
         {/* Top badges */}
         <div className="absolute top-2 left-2 right-2 flex justify-between items-start">
           <div className="flex flex-col gap-1 items-start">
+            {isRetail && (
+              <div className="bg-bubblegum border-2 border-ink rounded-full px-2 py-0.5">
+                <span className="text-[9px] font-black uppercase text-white">🛍️ Buy Now</span>
+              </div>
+            )}
             {product.featured && (
               <div className="bg-acid border-2 border-ink rounded-full px-2 py-0.5">
                 <span className="text-[9px] font-black uppercase text-ink">⚡ Featured</span>
@@ -86,20 +93,26 @@ export default function ProductCard({ product, onClick, index }: ProductCardProp
       <div className="p-3 md:p-4">
         <h3 className="font-black text-sm md:text-base leading-tight mb-2 line-clamp-2 min-h-[2.5rem]">{product.name}</h3>
 
-        <div className="flex justify-between items-end gap-2">
+        <div className="flex flex-wrap items-start justify-end gap-2">
           <div>
-            <p className="text-[9px] uppercase font-bold text-gray-500 tracking-wider mb-0.5">Current</p>
-            <p className="font-black text-lg md:text-xl text-bubblegum tabular-nums">₹{formatBid(product.bid)}</p>
+            <p className="text-[9px] uppercase font-bold text-gray-500 tracking-wider mb-0.5">{isRetail ? "Price" : "Current"}</p>
+            <p className={`font-black text-lg md:text-xl tabular-nums ${isRetail ? "text-acid" : "text-bubblegum"}`}>₹{formatBid(price)}</p>
           </div>
-          <div className={`text-right ${isEndingSoon ? "text-red-500" : ""}`}>
-            <p className="text-[9px] uppercase font-bold text-gray-500 tracking-wider mb-0.5">{isEndingSoon ? "🔥 Ending" : "Ends in"}</p>
-            <p className="font-black text-sm md:text-base font-mono tabular-nums">{formatTime(time)}</p>
-          </div>
+          {!isRetail && (
+            <div className={`text-right ${isEndingSoon ? "text-red-500" : ""}`}>
+              <p className="text-[9px] uppercase font-bold text-gray-500 tracking-wider mb-0.5">{isEndingSoon ? "🔥 Ending" : "Ends in"}</p>
+              <p className="font-black text-sm md:text-base font-mono tabular-nums">{formatTime(time)}</p>
+            </div>
+          )}
         </div>
 
         <div className="mt-3 pt-3 border-t-2 border-dashed border-ink/30 flex justify-between items-center">
-          <span className="text-[10px] font-bold text-gray-500">{product.bids} bids</span>
-          <span className="text-[10px] font-black uppercase text-ink group-hover:text-bubblegum transition-colors">Bid now →</span>
+          <span className="text-[10px] font-bold text-gray-500">
+            {isRetail ? "instant" : `${product.bids} bids`}
+          </span>
+          <span className="text-[10px] font-black uppercase text-ink group-hover:text-bubblegum transition-colors">
+            {isRetail ? "Buy now →" : "Bid now →"}
+          </span>
         </div>
       </div>
     </motion.div>

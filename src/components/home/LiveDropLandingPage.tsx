@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import CategoryBar from "@/components/ui/CategoryBar";
 import ProductCard from "@/components/drop/ProductCard";
 import BiddingCard from "@/components/drop/BiddingCard";
+import RetailHeroCard from "@/components/drop/RetailHeroCard";
 import UpcomingSection, { type UpcomingItem } from "@/components/home/UpcomingSection";
 import { SearchIcon, FilterIcon } from "@/components/ui/Icons";
 
@@ -17,60 +18,81 @@ const FilterDrawer = dynamic(() => import("@/components/home/FilterDrawer"), { s
 
 export default function LiveDropLandingPage({
   products,
+  retailProducts = [],
   upcomingItems = [],
 }: {
   products: Product[];
+  retailProducts?: Product[];
   upcomingItems?: UpcomingItem[];
 }) {
+  const [mode, setMode] = useState<"auction" | "retail">("auction");
   const [selectedCategory, setSelectedCategory] = useState<CategoryId>("all");
   const [featuredProduct, setFeaturedProduct] = useState<Product | undefined>(
     () => products.find((p) => p.featured) ?? products.find((p) => p.hot) ?? products[0],
+  );
+  const [featuredRetail, setFeaturedRetail] = useState<Product | undefined>(
+    () => retailProducts.find((p) => p.featured) ?? retailProducts.find((p) => p.hot) ?? retailProducts[0],
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
   const gridRef = useRef<HTMLElement>(null);
 
+  const activeList = mode === "auction" ? products : retailProducts;
+
   const categoryCounts = useMemo(
     () =>
       CATEGORIES.reduce<Record<string, number>>((acc, cat) => {
-        acc[cat.id] = cat.id === "all" ? products.length : products.filter((p) => p.category === cat.id).length;
+        acc[cat.id] = cat.id === "all" ? activeList.length : activeList.filter((p) => p.category === cat.id).length;
         return acc;
       }, {}),
-    [products],
+    [activeList],
   );
 
   const filteredProducts = useMemo(
     () =>
-      products.filter((p) => {
+      activeList.filter((p) => {
         const matchesCategory = selectedCategory === "all" || p.category === selectedCategory;
         const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-        const notFeatured = p.id !== featuredProduct?.id;
+        const heroId = mode === "auction" ? featuredProduct?.id : featuredRetail?.id;
+        const notFeatured = p.id !== heroId;
         return matchesCategory && matchesSearch && notFeatured;
       }),
-    [products, selectedCategory, searchQuery, featuredProduct?.id],
+    [activeList, selectedCategory, searchQuery, featuredProduct?.id, featuredRetail?.id, mode],
   );
 
   const handleCategorySelect = (catId: CategoryId) => {
     setSelectedCategory(catId);
     // Auto-select the featured (paid placement) product, else hot, in this category
+    const list = mode === "auction" ? products : retailProducts;
+    const setter = mode === "auction" ? setFeaturedProduct : setFeaturedRetail;
     const topProduct =
-      products.find((p) => catId !== "all" && p.category === catId && p.featured) ??
-      products.find((p) => (catId === "all" ? p.hot : p.category === catId && p.hot)) ??
-      products.find((p) => (catId === "all" ? true : p.category === catId));
-    if (topProduct) setFeaturedProduct(topProduct);
+      list.find((p) => catId !== "all" && p.category === catId && p.featured) ??
+      list.find((p) => (catId === "all" ? p.hot : p.category === catId && p.hot)) ??
+      list.find((p) => (catId === "all" ? true : p.category === catId));
+    if (topProduct) setter(topProduct);
     setTimeout(() => {
       gridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 100);
   };
 
   const handleProductClick = (product: Product) => {
-    setFeaturedProduct(product);
+    if (mode === "auction") {
+      setFeaturedProduct(product);
+    } else {
+      setFeaturedRetail(product);
+    }
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const switchMode = (next: "auction" | "retail") => {
+    setMode(next);
+    setSearchQuery("");
+    setSelectedCategory("all");
   };
 
   const activeCategory = CATEGORIES.find((c) => c.id === selectedCategory);
 
-  if (!featuredProduct) {
+  if (!featuredProduct && !featuredRetail) {
     return (
       <div className="min-h-screen bg-cream text-ink overflow-hidden font-sans relative">
         <div className="absolute inset-0 opacity-[0.04] pointer-events-none">
@@ -141,6 +163,28 @@ export default function LiveDropLandingPage({
         </Link>
       </nav>
 
+      {/* Shop mode toggle */}
+      <div className="max-w-xl mx-auto px-4 pt-4">
+        <div className="grid grid-cols-2 gap-2 bg-white border-2 border-ink rounded-full p-1.5 shadow-brut-md">
+          <button
+            onClick={() => switchMode("auction")}
+            className={`py-2.5 rounded-full font-black uppercase text-sm border-2 border-transparent transition-colors ${
+              mode === "auction" ? "bg-ink text-white border-ink" : "text-gray-500 hover:text-ink"
+            }`}
+          >
+            🔨 Live Auctions
+          </button>
+          <button
+            onClick={() => switchMode("retail")}
+            className={`py-2.5 rounded-full font-black uppercase text-sm border-2 border-transparent transition-colors ${
+              mode === "retail" ? "bg-ink text-white border-ink" : "text-gray-500 hover:text-ink"
+            }`}
+          >
+            🛍️ Buy Now
+          </button>
+        </div>
+      </div>
+
       <CategoryBar selected={selectedCategory} onSelect={handleCategorySelect} counts={categoryCounts} />
 
       {/* Search Bar */}
@@ -168,10 +212,14 @@ export default function LiveDropLandingPage({
         </div>
       </div>
 
-      {/* Featured Product (Bidding Card) */}
+      {/* Featured Product (Bidding Card or Retail Hero) */}
       <AnimatePresence mode="wait">
-        <motion.div key={featuredProduct.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
-          <BiddingCard product={featuredProduct} />
+        <motion.div key={mode === "auction" ? featuredProduct?.id ?? "auction-empty" : featuredRetail?.id ?? "retail-empty"} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
+          {mode === "auction" && featuredProduct ? (
+            <BiddingCard product={featuredProduct} />
+          ) : featuredRetail ? (
+            <RetailHeroCard product={featuredRetail} />
+          ) : null}
         </motion.div>
       </AnimatePresence>
 
@@ -183,7 +231,8 @@ export default function LiveDropLandingPage({
               {activeCategory?.emoji} {searchQuery ? `Results for "${searchQuery}"` : activeCategory?.name}
             </h2>
             <p className="text-sm text-gray-500 font-bold mt-1">
-              {filteredProducts.length} live {filteredProducts.length === 1 ? "drop" : "drops"} available
+              {filteredProducts.length} {mode === "auction" ? "live" : "buy now"}{" "}
+              {filteredProducts.length === 1 ? (mode === "auction" ? "drop" : "item") : mode === "auction" ? "drops" : "items"} available
             </p>
           </div>
 </div>

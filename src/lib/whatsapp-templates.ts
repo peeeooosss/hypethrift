@@ -14,6 +14,9 @@ export type WhatsAppContext = {
   sellerWhatsApp?: string;
   listingUrl?: string;
   rejectionReason?: string;
+  trackingNumber?: string;
+  address?: string;
+  total?: number;
 };
 
 export type WhatsAppTemplate = {
@@ -230,3 +233,93 @@ export const SELLER_TEMPLATES: WhatsAppTemplate[] = [
 export function resolveWhatsAppMessages(templates: WhatsAppTemplate[], context: WhatsAppContext): WhatsAppMessage[] {
   return templates.map(({ id, category, label, build }) => ({ id, category, label, text: build(context) }));
 }
+
+export const RETAIL_BUYER_TEMPLATES: WhatsAppTemplate[] = [
+  {
+    id: "retail-buyer-pay",
+    audience: "buyer",
+    category: "payment",
+    label: "Ask buyer to pay for Buy Now item",
+    build: (c) => [
+      `Hi ${value(c.buyerName, "there")},`,
+      `Your HypeThrift Buy Now order ${value(c.orderId)} for "${value(c.itemTitle)}" is reserved.`,
+      `Please pay ${money(c.total ?? c.finalPrice)} (${money(c.finalPrice)} + ${money(c.fee)} handling fee) to our UPI, upload the screenshot on the checkout page, and submit.`,
+    ].join("\n"),
+  },
+  {
+    id: "retail-buyer-verified",
+    audience: "buyer",
+    category: "order",
+    label: "Tell buyer payment is verified",
+    build: (c) => [
+      `Hi ${value(c.buyerName, "there")}, your Buy Now payment for order ${value(c.orderId)} (${value(c.itemTitle)}) is verified.`,
+      `${value(c.storeName, "The seller")} has received your delivery details and will ship your order shortly.`,
+      "Track it from My Account → Buy Now Orders.",
+    ].join("\n"),
+  },
+  {
+    id: "retail-buyer-shipped",
+    audience: "buyer",
+    category: "order",
+    label: "Tell buyer order is shipped",
+    build: (c) => [
+      `Hi ${value(c.buyerName, "there")}, your Buy Now order ${value(c.orderId)} (${value(c.itemTitle)}) has been shipped!`,
+      `Tracking: ${value(c.trackingNumber, "see your order page")}`,
+      "After delivery, confirm receipt from Buy Now Orders so the seller gets paid.",
+    ].join("\n"),
+  },
+  {
+    id: "retail-buyer-confirm",
+    audience: "buyer",
+    category: "order",
+    label: "Ask buyer to confirm Buy Now receipt",
+    build: (c) => [
+      `Hi ${value(c.buyerName, "there")}, order ${value(c.orderId)} (${value(c.itemTitle)}) was marked delivered.`,
+      "Once you have it in hand and are happy, open Buy Now Orders and click I received it to complete the order.",
+    ].join("\n"),
+  },
+  {
+    id: "retail-buyer-rejected",
+    audience: "buyer",
+    category: "payment",
+    label: "Ask buyer to resubmit Buy Now proof",
+    build: (c) => [
+      `Hi ${value(c.buyerName, "there")}, the Buy Now payment proof for order ${value(c.orderId)} (${value(c.itemTitle)}) could not be verified.`,
+      "Please upload a clear UPI screenshot showing the amount and transaction so we can verify it.",
+    ].join("\n"),
+  },
+];
+
+export const RETAIL_SELLER_TEMPLATES: WhatsAppTemplate[] = [
+  {
+    id: "retail-seller-verified",
+    audience: "seller",
+    category: "order",
+    label: "Tell seller Buy Now payment verified",
+    build: (c) => [
+      `Hi ${value(c.sellerName, "there")}, the buyer's Buy Now payment for order ${value(c.orderId)} (${value(c.itemTitle)}) is verified.`,
+      `Amount: ${money(c.finalPrice)} | Handling fee: ${money(c.fee)}`,
+      `Ship to: ${value(c.address, "see Seller Orders")}`,
+      `Pick up the address and buyer phone from Seller → Buy Now Orders, pack and ship the item.`,
+    ].join("\n"),
+  },
+  {
+    id: "retail-seller-pack",
+    audience: "seller",
+    category: "order",
+    label: "Ask seller to pack Buy Now order",
+    build: (c) => [
+      `Hi ${value(c.sellerName, "there")}, order ${value(c.orderId)} (${value(c.itemTitle)}) is a Buy Now sale ready to fulfill.`,
+      "Open Seller → Buy Now Orders, confirm you packed it, add the tracking number, and mark it shipped.",
+    ].join("\n"),
+  },
+  {
+    id: "retail-seller-confirm-delivery",
+    audience: "seller",
+    category: "order",
+    label: "Remind seller to confirm delivery",
+    build: (c) => [
+      `Hi ${value(c.sellerName, "there")}, please mark order ${value(c.orderId)} (${value(c.itemTitle)}) as delivered after the courier hands it over so the buyer can confirm and you get paid.`,
+    ].join("\n"),
+  },
+];

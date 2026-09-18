@@ -11,9 +11,11 @@ const NAV = [
   { href: "/admin/categories", label: "Categories" },
   { href: "/admin/orders", label: "Orders" },
   { href: "/admin/contact-fees", label: "Contact Fees" },
+  { href: "/admin/retail-orders", label: "Buy Now Orders" },
   { href: "/admin/credits", label: "Credits" },
   { href: "/admin/subscriptions", label: "Subscriptions" },
   { href: "/admin/payouts", label: "Payouts" },
+  { href: "/admin/revenue", label: "Revenue" },
   { href: "/admin/support", label: "Support" },
 ];
 

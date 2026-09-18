@@ -2,6 +2,7 @@ export const ADMIN_WHATSAPP = "919864854481";
 export const ADMIN_UPI_ID = "9864854481@ptsbi";
 export const CONTACT_FEE = 69;
 export const RETAIL_CONNECTION_FEE = 39;
+export const RETAIL_COMMISSION_RATE = 0.08;
 export const ITEM_PAYMENT_WINDOW_HOURS = 48;
 export const FREE_LISTINGS = 2;
 

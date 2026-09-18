@@ -118,39 +118,39 @@ model VerificationToken {
 }
 
 model User {
-  id            String        @id @default(cuid())
-  email         String        @unique
-  emailVerified DateTime?
-  password      String?
-  name          String?
-  image         String?
-  role          UserRole      @default(CUSTOMER)
-  sellerStatus  SellerStatus?
-  sellerNote    String?       // admin note on rejection
-  isBanned      Boolean       @default(false)
-  phone         String?
-  whatsappNumber String?
-  listingCredits Int          @default(0)
-  freeListingsGranted Boolean @default(false)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id                  String        @id @default(cuid())
+  email               String        @unique
+  emailVerified       DateTime?
+  password            String?
+  name                String?
+  image               String?
+  role                UserRole      @default(CUSTOMER)
+  sellerStatus        SellerStatus?
+  sellerNote          String? // admin note on rejection
+  isBanned            Boolean       @default(false)
+  phone               String?
+  whatsappNumber      String?
+  listingCredits      Int           @default(0)
+  freeListingsGranted Boolean       @default(false)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
 
-   accounts         Account[]
-   sessions         Session[]
-   listings         Listing[]
-   bids             Bid[]
-   buyerOrders      Order[]       @relation("BuyerOrders")
-   sellerOrders     Order[]       @relation("SellerOrders")
-   buyerRetailOrders RetailOrder[] @relation("BuyerRetailOrders")
-   sellerRetailOrders RetailOrder[] @relation("SellerRetailOrders")
-   subscriptions    Subscription[]
-   addresses        Address[]
-   payouts          Payout[]
-   supportTickets   SupportTicket[]
-   savedItems       SavedItem[]
-   upcomingVotes    UpcomingVote[]
-   sellerProfile    SellerProfile?
-   creditPurchases  CreditPurchase[]
+  accounts           Account[]
+  sessions           Session[]
+  listings           Listing[]
+  bids               Bid[]
+  buyerOrders        Order[]          @relation("BuyerOrders")
+  sellerOrders       Order[]          @relation("SellerOrders")
+  buyerRetailOrders  RetailOrder[]    @relation("BuyerRetailOrders")
+  sellerRetailOrders RetailOrder[]    @relation("SellerRetailOrders")
+  subscriptions      Subscription[]
+  addresses          Address[]
+  payouts            Payout[]
+  supportTickets     SupportTicket[]
+  savedItems         SavedItem[]
+  upcomingVotes      UpcomingVote[]
+  sellerProfile      SellerProfile?
+  creditPurchases    CreditPurchase[]
 }
 
 model Address {
@@ -179,49 +179,49 @@ model Category {
 }
 
 model Listing {
-  id            String        @id @default(cuid())
-  title         String
-  description   String
-  categoryId    String
-  sellerId      String
-  images        String[]
-  listingMode   ListingMode   @default(AUCTION)
-  startingBid   Int
-  buyNowPrice   Int?
-  currentBid    Int?
-  bidIncrement  Int           @default(50)
-  reservePrice  Int?
-  size          String?
-  condition     ListingCondition?
-  status        ListingStatus @default(DRAFT)
-  featured      Boolean       @default(false)
-  featuredUntil DateTime?
-  verified      Boolean       @default(false)
-  hot           Boolean       @default(false)
-  endsAt        DateTime
-  startsAt      DateTime?
-  durationHours Int           @default(24)
-  upcomingIntent Boolean      @default(false)
-  views         Int           @default(0)
-   watchers      Int           @default(0)
-   bidCount      Int           @default(0)
-   createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id             String            @id @default(cuid())
+  title          String
+  description    String
+  categoryId     String
+  sellerId       String
+  images         String[]
+  listingMode    ListingMode       @default(AUCTION)
+  startingBid    Int
+  buyNowPrice    Int?
+  currentBid     Int?
+  bidIncrement   Int               @default(50)
+  reservePrice   Int?
+  size           String?
+  condition      ListingCondition?
+  status         ListingStatus     @default(DRAFT)
+  featured       Boolean           @default(false)
+  featuredUntil  DateTime?
+  verified       Boolean           @default(false)
+  hot            Boolean           @default(false)
+  endsAt         DateTime
+  startsAt       DateTime?
+  durationHours  Int               @default(24)
+  upcomingIntent Boolean           @default(false)
+  views          Int               @default(0)
+  watchers       Int               @default(0)
+  bidCount       Int               @default(0)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
 
-   category Category @relation(fields: [categoryId], references: [id])
-   seller   User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-    bids     Bid[]
-    order    Order?
-    retailOrder RetailOrder?
-    savedItems SavedItem[]
-    featureCharges FeatureCharge[]
-    upcomingVotes UpcomingVote[]
+  category       Category        @relation(fields: [categoryId], references: [id])
+  seller         User            @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  bids           Bid[]
+  order          Order?
+  retailOrder    RetailOrder?
+  savedItems     SavedItem[]
+  featureCharges FeatureCharge[]
+  upcomingVotes  UpcomingVote[]
 
-   @@index([status])
-   @@index([categoryId])
-   @@index([sellerId])
-   @@index([size])
-   @@index([listingMode])
+  @@index([status])
+  @@index([categoryId])
+  @@index([sellerId])
+  @@index([size])
+  @@index([listingMode])
 }
 
 enum ListingCondition {
@@ -242,8 +242,8 @@ model Bid {
   listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
   bidder  User    @relation(fields: [bidderId], references: [id], onDelete: Cascade)
 
-   @@index([listingId])
-   @@index([bidderId])
+  @@index([listingId])
+  @@index([bidderId])
 }
 
 model SavedItem {
@@ -274,28 +274,28 @@ model UpcomingVote {
 }
 
 model Order {
-  id              String      @id @default(cuid())
-  listingId       String      @unique
-  buyerId         String
-  sellerId        String
-  finalPrice      Int
-  platformFee     Int         @default(69)
-  status          OrderStatus @default(PENDING_CONTACT_FEE)
-  shippingAddress Json?
-  razorpayOrderId String?
-  paymentId       String?
-  buyerPhone      String?
-  buyerAgreementAccepted Boolean @default(false)
-  paidVia         String?
-  proofUrl        String?
-  contactFeeConfirmed Boolean @default(false)
-  paymentDeadline DateTime?
-  itemPaymentDeadline DateTime?
-  sellerMarkedReadyAt DateTime?
-  buyerConfirmedAt DateTime?
-  sellerOrderDetails Json?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  id                     String      @id @default(cuid())
+  listingId              String      @unique
+  buyerId                String
+  sellerId               String
+  finalPrice             Int
+  platformFee            Int         @default(69)
+  status                 OrderStatus @default(PENDING_CONTACT_FEE)
+  shippingAddress        Json?
+  razorpayOrderId        String?
+  paymentId              String?
+  buyerPhone             String?
+  buyerAgreementAccepted Boolean     @default(false)
+  paidVia                String?
+  proofUrl               String?
+  contactFeeConfirmed    Boolean     @default(false)
+  paymentDeadline        DateTime?
+  itemPaymentDeadline    DateTime?
+  sellerMarkedReadyAt    DateTime?
+  buyerConfirmedAt       DateTime?
+  sellerOrderDetails     Json?
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
 
   listing Listing @relation(fields: [listingId], references: [id])
   buyer   User    @relation("BuyerOrders", fields: [buyerId], references: [id])
@@ -340,50 +340,55 @@ model SupportTicket {
 }
 
 model SellerProfile {
-  id                String   @id @default(cuid())
-  userId            String   @unique
+  id                String     @id @default(cuid())
+  userId            String     @unique
   storeName         String
   storeDescription  String?
   location          String?
   whatsappNumber    String
   returnPolicy      String?
-  plan              SellerPlan      @default(FREE)
+  plan              SellerPlan @default(FREE)
   planExpiresAt     DateTime?
-  listingsUsed      Int             @default(0)
-  storeSlug         String?  @unique
+  listingsUsed      Int        @default(0)
+  storeSlug         String?    @unique
   storeLogo         String?
   instagramUrl      String?
   upiId             String?
-  acceptedAgreement Boolean  @default(false)
+  acceptedAgreement Boolean    @default(false)
   acceptedAt        DateTime?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model RetailOrder {
-  id                 String            @id @default(cuid())
-  listingId          String            @unique
-  buyerId            String
-  sellerId           String
-  finalPrice         Int
+  id               String            @id @default(cuid())
+  listingId        String            @unique
+  buyerId          String
+  sellerId         String
+finalPrice         Int
   connectionFee      Int               @default(39)
   status             RetailOrderStatus @default(PENDING_PAYMENT)
   paymentMethod      String?
   paymentProofUrl    String?
+  buyerName          String?
   adminVerifiedAt    DateTime?
-  address            Json?
-  buyerPhone         String?
-  trackingNumber     String?
-  trackingUrl        String?
-  shippedAt          DateTime?
-  deliveredAt        DateTime?
-  buyerConfirmedAt   DateTime?
-  completedAt        DateTime?
-  adminNotes         String?
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
+  paymentDeadline  DateTime?
+  address          Json?
+  buyerPhone       String?
+  trackingNumber   String?
+  trackingUrl      String?
+  shippedAt        DateTime?
+  deliveredAt      DateTime?
+  buyerConfirmedAt DateTime?
+  completedAt      DateTime?
+  commission       Int?
+  sellerPayout     Int?
+  payoutAt         DateTime?
+  adminNotes       String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 
   listing Listing @relation(fields: [listingId], references: [id])
   buyer   User    @relation("BuyerRetailOrders", fields: [buyerId], references: [id])

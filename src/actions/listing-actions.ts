@@ -391,12 +391,13 @@ export async function placeBid(prevState: { error?: string; success?: boolean } 
 
   const listing = await prisma.listing.findUnique({
     where: { id: listingId },
-    select: { id: true, sellerId: true, status: true, endsAt: true, startingBid: true, currentBid: true, bidIncrement: true, reservePrice: true },
+    select: { id: true, sellerId: true, status: true, endsAt: true, startingBid: true, currentBid: true, bidIncrement: true, reservePrice: true, listingMode: true },
   });
   if (!listing) return { error: "Listing not found" };
   if (listing.sellerId === userId) return { error: "You cannot bid on your own listing" };
   if (listing.status !== "ACTIVE") return { error: "This auction is not active" };
   if (new Date(listing.endsAt) <= new Date()) return { error: "This auction has ended" };
+  if (listing.listingMode === "RETAIL") return { error: "This item is Buy Now only — tap Buy Now to get it instantly" };
 
   const base = listing.currentBid ?? listing.startingBid;
   const minimum = base + listing.bidIncrement;

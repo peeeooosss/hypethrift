@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { updatePayoutStatus, createPayout } from "@/actions/admin-actions";
+import { updatePayoutStatus, createPayout, createRetailPayout } from "@/actions/admin-actions";
+import { getEligibleRetailPayouts } from "@/lib/retail-data";
 
 type PayoutStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "REJECTED";
 
@@ -38,15 +39,18 @@ type PayoutWithSeller = {
 export default async function AdminPayoutsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; payout?: string; error?: string }>;
 }) {
-  const statusFilter = (await searchParams).status;
+  const { status: statusFilter, payout, error } = await searchParams;
 
-  const payouts = await prisma.payout.findMany({
-    where: statusFilter ? { status: statusFilter as PayoutStatus } : undefined,
-    orderBy: { createdAt: "desc" },
-    include: { seller: { select: { name: true, email: true } } },
-  });
+  const [payouts, eligiblePayouts] = await Promise.all([
+    prisma.payout.findMany({
+      where: statusFilter ? { status: statusFilter as PayoutStatus } : undefined,
+      orderBy: { createdAt: "desc" },
+      include: { seller: { select: { name: true, email: true } } },
+    }),
+    getEligibleRetailPayouts(),
+  ]);
 
   const statusCounts = await prisma.payout.groupBy({
     by: ["status"],
@@ -58,6 +62,14 @@ export default async function AdminPayoutsPage({
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-black uppercase text-white">Payouts</h1>
       </div>
+
+      {payout === "saved" && (
+        <div className="bg-acid border-2 border-ink shadow-brut-md rounded-2xl px-5 py-4 font-black uppercase text-sm">
+          Payout recorded — seller has been paid. 🎉
+        </div>
+      )}
+      {error === "missing_seller" && <div className="bg-bubblegum text-white border-2 border-ink shadow-brut-md rounded-2xl px-5 py-4 font-black uppercase text-sm">Something went wrong. Try again.</div>}
+      {error === "no_eligible_orders" && <div className="bg-bubblegum text-white border-2 border-ink shadow-brut-md rounded-2xl px-5 py-4 font-black uppercase text-sm">No eligible orders for that payout.</div>}
 
       <div className="flex gap-2 overflow-x-auto">
         <a
@@ -82,6 +94,36 @@ export default async function AdminPayoutsPage({
             </a>
           );
         })}
+      </div>
+
+      <div className="bg-white border-2 border-ink shadow-brut-lg rounded-2xl p-6">
+        <h2 className="text-xl font-black uppercase mb-1">Retail payouts</h2>
+        <p className="text-sm font-bold text-gray-500 mb-4">
+          Pay each seller their Buy Now earnings for all completed, unpaid orders in one click.
+        </p>
+        {eligiblePayouts.length === 0 ? (
+          <p className="text-sm font-bold text-gray-500">Nothing due right now.</p>
+        ) : (
+          <div className="space-y-2">
+            {eligiblePayouts.map((p) => (
+              <div key={p.sellerId} className="flex flex-wrap items-center justify-between gap-3 bg-ink/5 border-2 border-ink/20 rounded-2xl px-4 py-3">
+                <div className="min-w-0">
+                  <p className="font-black uppercase truncate">{p.storeName}</p>
+                  <p className="text-xs font-bold text-gray-500">{p.orders} order{p.orders === 1 ? "" : "s"} · {p.upiId ? `UPI: ${p.upiId}` : "no UPI on file"}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <p className="font-black text-acid">₹{p.payout.toLocaleString("en-IN")}</p>
+                  <form action={createRetailPayout}>
+                    <input type="hidden" name="sellerId" value={p.sellerId} />
+                    <button className="bg-acid border-2 border-ink shadow-brut-sm px-4 py-2 rounded-xl font-black uppercase text-xs hover:bg-bubblegum">
+                      Pay out
+                    </button>
+                  </form>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="bg-white border-2 border-ink shadow-brut-lg rounded-2xl p-6">

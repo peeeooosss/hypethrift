@@ -439,3 +439,47 @@ export async function updatePayoutStatus(formData: FormData) {
   });
   revalidatePath("/admin/payouts");
 }
+
+// ---------------------------------------------------------------------------
+// Retail revenue & payouts
+// ---------------------------------------------------------------------------
+const RETAIL_COMMISSION_RATE = 0.08;
+
+export async function createRetailPayout(formData: FormData) {
+  await requireAdminOrThrow();
+  const sellerId = formData.get("sellerId")?.toString();
+  if (!sellerId) redirect("/admin/payouts?error=missing_seller");
+
+  const orders = await prisma.retailOrder.findMany({
+    where: { sellerId, status: "COMPLETED", payoutAt: null },
+    select: { id: true, finalPrice: true, commission: true },
+  });
+  if (orders.length === 0) redirect("/admin/payouts?error=no_eligible_orders");
+
+  const payoutAmount = orders.reduce((sum, o) => sum + (o.finalPrice - (o.commission ?? Math.round(o.finalPrice * RETAIL_COMMISSION_RATE))), 0);
+  if (payoutAmount <= 0) redirect("/admin/payouts?error=no_eligible_orders");
+
+  const profile = await prisma.sellerProfile.findUnique({
+    where: { userId: sellerId },
+    select: { upiId: true },
+  });
+
+  await prisma.$transaction([
+    prisma.payout.create({
+      data: {
+        sellerId,
+        amount: payoutAmount,
+        method: profile?.upiId ? `UPI ${profile.upiId}` : "bank",
+        status: "COMPLETED",
+      },
+    }),
+    prisma.retailOrder.updateMany({
+      where: { id: { in: orders.map((o) => o.id) } },
+      data: { payoutAt: new Date() },
+    }),
+  ]);
+
+  revalidatePath("/admin/payouts");
+  revalidatePath("/admin/revenue");
+  redirect("/admin/payouts?payout=saved");
+}

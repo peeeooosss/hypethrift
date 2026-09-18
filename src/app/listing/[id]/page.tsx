@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { createOrderFromListing } from "@/actions/auction-actions";
 import { toggleRequestLive } from "@/actions/listing-actions";
+import { RETAIL_CONNECTION_FEE } from "@/lib/platform";
 import BidForm from "@/components/listing/BidForm";
 import BidHistory from "@/components/listing/BidHistory";
 import SaveButton from "@/components/listing/SaveButton";
@@ -58,6 +59,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
   if (!isPublicStatus && !isOwnerOrAdmin) notFound();
   const currentBid = listing.currentBid ?? listing.startingBid;
   const nextMin = currentBid + listing.bidIncrement;
+  const isRetailable = ["RETAIL", "BOTH"].includes(listing.listingMode) && listing.buyNowPrice != null;
   const endsMs = new Date(listing.endsAt).getTime();
   const isEnded = endsMs <= Date.now();
   const canBid =
@@ -135,11 +137,11 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
       <div className="space-y-6">
         <div className="bg-white border-2 border-ink shadow-brut-lg rounded-3xl p-6">
           <div className="flex justify-between text-xs uppercase font-black text-gray-500 tracking-wider mb-2">
-            <span>Current Bid</span>
+            <span>{isRetailable ? "Buy Now Price" : "Current Bid"}</span>
             <span>Status</span>
           </div>
           <div className="flex justify-between items-baseline mb-4">
-            <span className="text-4xl font-black">{money(currentBid)}</span>
+            <span className="text-4xl font-black">{money(isRetailable ? listing.buyNowPrice : currentBid)}</span>
             <span className="text-xs font-black uppercase">{listing.status.replace("_", " ")}</span>
           </div>
 
@@ -185,6 +187,33 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
               startsAt={listing.startsAt?.toISOString() ?? null}
               signedIn={!!session?.user}
             />
+          ) : listing.status === "SOLD" ? (
+            <p className="text-center text-gray-500 font-bold uppercase">Sold out</p>
+          ) : isRetailable && listing.status === "ACTIVE" && !isEnded && session?.user?.id === listing.sellerId ? (
+            <p className="text-center text-gray-500 font-bold uppercase">You own this item</p>
+          ) : isRetailable && listing.status === "ACTIVE" && !isEnded ? (
+            <div className="space-y-3">
+              {!session?.user ? (
+                <Link
+                  href="/login"
+                  className="block text-center bg-bubblegum border-2 border-ink shadow-brut-md py-3 rounded-2xl font-black uppercase text-sm hover:bg-acid hover:text-ink transition-colors"
+                >
+                  Sign in to buy · ₹{listing.buyNowPrice?.toLocaleString("en-IN")} + ₹{RETAIL_CONNECTION_FEE} fee
+                </Link>
+              ) : session.user.role === "CUSTOMER" ? (
+                <Link
+                  href={`/checkout/retail/${encodeURIComponent(listing.id)}`}
+                  className="block text-center bg-bubblegum border-2 border-ink shadow-brut-md py-3 rounded-2xl font-black uppercase text-sm hover:bg-acid hover:text-ink transition-colors"
+                >
+                  🛍️ Buy Now · ₹{listing.buyNowPrice?.toLocaleString("en-IN")} + ₹{RETAIL_CONNECTION_FEE} fee
+                </Link>
+              ) : (
+                <p className="text-center text-gray-500 font-bold uppercase">
+                  {session.user.role === "ADMIN" ? "Admins cannot buy" : "Buyer accounts only"}
+                </p>
+              )}
+              {isRetailable && canBid && listing.listingMode === "BOTH" && <BidForm listingId={listing.id} minimum={nextMin} />}
+            </div>
           ) : canBid ? (
             <BidForm listingId={listing.id} minimum={nextMin} />
           ) : isEnded ? (
