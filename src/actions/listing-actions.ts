@@ -6,6 +6,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { sizeIsValidForCategory } from "@/lib/sizes";
+import { getRetailQuota, isRetailMode } from "@/lib/subscription";
 
 type ListingConditionType = "NEW" | "LIKE_NEW" | "EXCELLENT" | "GOOD" | "FAIR";
 
@@ -22,7 +23,15 @@ const listingSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
   description: z.string().min(10, "Description is too short"),
   categoryId: z.string().min(1, "Select a category"),
-  startingBid: z.coerce.number().int().min(1, "Starting bid is required"),
+  listingMode: z.enum(["AUCTION", "RETAIL", "BOTH"]),
+  startingBid: z.preprocess(
+    (v) => (v === "" || v === null ? undefined : v),
+    z.coerce.number().int().min(1, "Starting bid is required").optional(),
+  ),
+  buyNowPrice: z.preprocess(
+    (v) => (v === "" || v === null ? undefined : v),
+    z.coerce.number().int().min(1, "Buy Now price is required").optional(),
+  ),
   reservePrice: z.coerce.number().int().optional().or(z.literal("").transform(() => undefined)),
   size: z.string().min(1, "Select a size"),
   condition: z.enum(["NEW", "LIKE_NEW", "EXCELLENT", "GOOD", "FAIR"]).optional(),
@@ -56,7 +65,9 @@ export async function createListing(prevState: { error?: string; success?: boole
     title: formData.get("title"),
     description: formData.get("description"),
     categoryId: formData.get("categoryId"),
+    listingMode: formData.get("listingMode"),
     startingBid: formData.get("startingBid"),
+    buyNowPrice: formData.get("buyNowPrice"),
     reservePrice: formData.get("reservePrice"),
     size: formData.get("size"),
     condition: formData.get("condition"),
@@ -73,7 +84,9 @@ export async function createListing(prevState: { error?: string; success?: boole
      title,
      description,
      categoryId,
+     listingMode,
      startingBid,
+     buyNowPrice,
      reservePrice,
      size,
      condition,
@@ -82,7 +95,21 @@ export async function createListing(prevState: { error?: string; success?: boole
      action,
    } = parsed.data;
 
-  if (reservePrice !== undefined && reservePrice < startingBid) {
+  let effectiveStartingBid = startingBid ?? 0;
+  let effectiveReserve = reservePrice;
+  if (listingMode === "AUCTION" || listingMode === "BOTH") {
+    if (!startingBid) return { error: "Starting bid is required for auction listings" };
+    effectiveStartingBid = startingBid;
+    if (listingMode === "BOTH") {
+      if (!buyNowPrice) return { error: "Buy Now price is required for a hybrid listing" };
+      if (buyNowPrice < startingBid) return { error: "Buy Now price must be at least the starting bid" };
+    }
+  } else if (listingMode === "RETAIL") {
+    if (!buyNowPrice) return { error: "Buy Now price is required for a Buy Now listing" };
+    effectiveStartingBid = buyNowPrice;
+    effectiveReserve = undefined;
+  }
+  if (effectiveReserve !== undefined && effectiveReserve < effectiveStartingBid) {
     return { error: "Reserve price must be higher than the starting bid" };
   }
 
@@ -123,6 +150,15 @@ export async function createListing(prevState: { error?: string; success?: boole
     }
   }
 
+  // Retail / hybrid listings consume the seller's subscription quota.
+  if (isRetailMode(listingMode) && action === "submit_review") {
+    const { used, listingLimit } = await getRetailQuota(seller.id);
+    if (used >= listingLimit) {
+      return { error: `You have used ${used} of ${listingLimit} Buy Now listings. Upgrade your plan or remove an existing retail listing.` };
+    }
+  }
+
+  const retailOnly = listingMode === "RETAIL";
   await prisma.listing.create({
     data: {
       title,
@@ -130,17 +166,21 @@ export async function createListing(prevState: { error?: string; success?: boole
       category: { connect: { id: categoryId } },
       seller: { connect: { id: seller.id } },
       images: imgs,
-      startingBid,
+      listingMode,
+      startingBid: effectiveStartingBid,
       currentBid: null,
       bidIncrement: 50,
-      reservePrice,
+      reservePrice: effectiveReserve,
+      buyNowPrice: listingMode === "AUCTION" ? null : (buyNowPrice ?? null),
       size,
       condition: condition ? (condition as ListingConditionType) : null,
       status,
       startsAt: scheduledAt,
-      upcomingIntent: isUpcomingIntent,
+      upcomingIntent: isUpcomingIntent && !retailOnly,
       durationHours: duration,
-      endsAt: new Date(Date.now() + duration * 60 * 60 * 1000),
+      endsAt: retailOnly
+        ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        : new Date(Date.now() + duration * 60 * 60 * 1000),
     },
   });
 
@@ -165,7 +205,15 @@ const editListingSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
   description: z.string().min(10, "Description is too short"),
   categoryId: z.string().min(1, "Select a category"),
-  startingBid: z.coerce.number().int().min(1, "Starting bid is required"),
+  listingMode: z.enum(["AUCTION", "RETAIL", "BOTH"]),
+  startingBid: z.preprocess(
+    (v) => (v === "" || v === null ? undefined : v),
+    z.coerce.number().int().min(1, "Starting bid is required").optional(),
+  ),
+  buyNowPrice: z.preprocess(
+    (v) => (v === "" || v === null ? undefined : v),
+    z.coerce.number().int().min(1, "Buy Now price is required").optional(),
+  ),
   reservePrice: z.coerce.number().int().optional().or(z.literal("").transform(() => undefined)),
   size: z.string().min(1, "Select a size"),
   condition: z.enum(["NEW", "LIKE_NEW", "EXCELLENT", "GOOD", "FAIR"]).optional(),
@@ -180,7 +228,7 @@ export async function updateListing(prevState: { error?: string; success?: boole
 
   const existing = await prisma.listing.findUnique({
     where: { id: listingId },
-    select: { id: true, sellerId: true, status: true, bidCount: true, endsAt: true },
+    select: { id: true, sellerId: true, status: true, bidCount: true, endsAt: true, listingMode: true, upcomingIntent: true },
   });
   if (!existing || existing.sellerId !== seller.id) return { error: "Listing not found" };
   if (existing.bidCount > 0) return { error: "This auction already has bids. Listing details are locked." };
@@ -206,7 +254,9 @@ export async function updateListing(prevState: { error?: string; success?: boole
     title: formData.get("title"),
     description: formData.get("description"),
     categoryId: formData.get("categoryId"),
+    listingMode: formData.get("listingMode"),
     startingBid: formData.get("startingBid"),
+    buyNowPrice: formData.get("buyNowPrice"),
     reservePrice: formData.get("reservePrice"),
     size: formData.get("size"),
     condition: formData.get("condition"),
@@ -214,9 +264,39 @@ export async function updateListing(prevState: { error?: string; success?: boole
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
 
-  const { title, description, categoryId, startingBid, reservePrice, size, condition, duration } = parsed.data;
-  if (reservePrice !== undefined && reservePrice < startingBid) {
+  const { title, description, categoryId, listingMode, startingBid, buyNowPrice, reservePrice, size, condition, duration } = parsed.data;
+
+  let effectiveStartingBid = startingBid ?? 0;
+  let effectiveReserve = reservePrice;
+  if (listingMode === "AUCTION" || listingMode === "BOTH") {
+    if (!startingBid) return { error: "Starting bid is required for auction listings" };
+    effectiveStartingBid = startingBid;
+    if (listingMode === "BOTH") {
+      if (!buyNowPrice) return { error: "Buy Now price is required for a hybrid listing" };
+      if (buyNowPrice < startingBid) return { error: "Buy Now price must be at least the starting bid" };
+    }
+  } else if (listingMode === "RETAIL") {
+    if (!buyNowPrice) return { error: "Buy Now price is required for a Buy Now listing" };
+    effectiveStartingBid = buyNowPrice;
+    effectiveReserve = undefined;
+  }
+  if (effectiveReserve !== undefined && effectiveReserve < effectiveStartingBid) {
     return { error: "Reserve price must be higher than the starting bid" };
+  }
+
+  // Retail quota: account for whether this listing already counts toward the limit.
+  const currentlyCounts =
+    isRetailMode(existing.listingMode) &&
+    (existing.status === "PENDING_REVIEW" || existing.status === "ACTIVE")
+      ? 1
+      : 0;
+  if (isRetailMode(listingMode)) {
+    const { used, listingLimit } = await getRetailQuota(seller.id);
+    if (used - currentlyCounts + 1 > listingLimit) {
+      return {
+        error: `Saving this listing would exceed your Buy Now quota (${listingLimit}). Upgrade your plan or remove an existing retail listing.`,
+      };
+    }
   }
 
   const category = await prisma.category.findUnique({ where: { id: categoryId }, select: { slug: true } });
@@ -225,6 +305,7 @@ export async function updateListing(prevState: { error?: string; success?: boole
     return { error: "Please select a valid size for this category" };
   }
 
+  const retailOnly = listingMode === "RETAIL";
   await prisma.listing.update({
     where: { id: listingId },
     data: {
@@ -232,15 +313,22 @@ export async function updateListing(prevState: { error?: string; success?: boole
       description,
       category: { connect: { id: categoryId } },
       images,
-      startingBid,
+      listingMode,
+      startingBid: effectiveStartingBid,
       // Reserve is only enforced at auction completion; clear it when blanked.
-      reservePrice: reservePrice ?? null,
+      reservePrice: effectiveReserve ?? null,
+      buyNowPrice: listingMode === "AUCTION" ? null : (buyNowPrice ?? null),
       size,
       condition: condition ? (condition as ListingConditionType) : null,
       durationHours: duration,
+      upcomingIntent: existing.upcomingIntent && !retailOnly,
       // Editing a live listing with no bids resets its clock so buyers see a
       // fair auction; draft/pending listings keep their original schedule.
-      ...(existing.status === "ACTIVE" ? { endsAt: new Date(Date.now() + duration * 60 * 60 * 1000) } : {}),
+      ...(existing.status === "ACTIVE" && !retailOnly
+        ? { endsAt: new Date(Date.now() + duration * 60 * 60 * 1000) }
+        : retailOnly
+          ? { endsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }
+          : {}),
     },
   });
 

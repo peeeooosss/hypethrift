@@ -65,6 +65,7 @@ enum SellerPlan {
 }
 
 enum SubscriptionStatus {
+  PENDING
   ACTIVE
   EXPIRED
   CANCELLED

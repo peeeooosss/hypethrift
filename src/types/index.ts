@@ -28,7 +28,7 @@ export interface Product {
   bg: string;
   image?: string | null;
   listingMode?: "AUCTION" | "RETAIL" | "BOTH";
-  bid?: number;
+  bid: number;
   buyNowPrice?: number | null;
   time: number;
   bids: number;

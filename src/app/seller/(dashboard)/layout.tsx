@@ -8,6 +8,8 @@ const NAV = [
   { href: "/seller/listings", label: "Listings" },
   { href: "/seller/listings/new", label: "New Drop" },
   { href: "/seller/orders", label: "Orders" },
+  { href: "/seller/retail-orders", label: "Buy Now Orders" },
+  { href: "/seller/plan", label: "Plan" },
   { href: "/seller/earnings", label: "Earnings" },
   { href: "/seller/credits", label: "Listing Credits" },
   { href: "/seller/verification", label: "Verification" },
