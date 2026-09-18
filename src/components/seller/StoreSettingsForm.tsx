@@ -24,7 +24,17 @@ export default function StoreSettingsForm(props: StoreSettingsFormProps) {
       <h2 className="text-xl font-black uppercase mb-1">Your Storefront</h2>
       <p className="text-sm font-bold text-gray-500 mb-4">
         {props.storeSlug ? (
-          <>Your store lives at <span className="font-black text-ink">/store/{props.storeSlug}</span></>
+          <>
+            Your store lives at{" "}
+            <a
+              href={`/store/${props.storeSlug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-black text-ink underline decoration-bubblegum decoration-2 underline-offset-2 hover:text-bubblegum"
+            >
+              /store/{props.storeSlug}
+            </a>
+          </>
         ) : (
           "Your store page link will be generated from your store name."
         )}

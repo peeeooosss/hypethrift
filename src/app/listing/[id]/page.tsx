@@ -33,7 +33,14 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
     where: { id },
     include: {
       category: true,
-      seller: { select: { name: true, email: true, image: true } },
+      seller: {
+        select: {
+          name: true,
+          email: true,
+          image: true,
+          sellerProfile: { select: { storeName: true, storeSlug: true } },
+        },
+      },
       bids: {
         orderBy: { createdAt: "desc" },
         take: 20,
@@ -203,6 +210,14 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
           <p className="text-xl font-black mt-1">
             {listing.seller.name ?? listing.seller.email}
           </p>
+          {listing.seller.sellerProfile?.storeSlug && (
+            <Link
+              href={`/store/${listing.seller.sellerProfile.storeSlug}`}
+              className="mt-3 inline-block text-xs font-black uppercase px-4 py-2 rounded-full bg-ink text-acid border-2 border-ink hover:bg-acid hover:text-ink transition-colors"
+            >
+              🏬 Visit {listing.seller.sellerProfile.storeName ?? "store"}
+            </Link>
+          )}
         </div>
         </div>
       </div>
