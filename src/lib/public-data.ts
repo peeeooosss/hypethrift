@@ -17,8 +17,10 @@ export const getHomepageListings = unstable_cache(
         id: true,
         title: true,
         images: true,
+        listingMode: true,
         currentBid: true,
         startingBid: true,
+        buyNowPrice: true,
         size: true,
         endsAt: true,
         bidCount: true,
@@ -37,6 +39,50 @@ export const getHomepageListings = unstable_cache(
     }));
   },
   ["homepage-active-listings"],
+  { revalidate: 10 },
+);
+
+export const getHomepageRetailListings = unstable_cache(
+  async () => {
+    const rows = await prisma.listing.findMany({
+      where: {
+        status: "ACTIVE",
+        listingMode: { in: ["RETAIL", "BOTH"] },
+        buyNowPrice: { not: null },
+      },
+      orderBy: [{ featured: "desc" }, { hot: "desc" }, { createdAt: "desc" }],
+      take: 24,
+      select: {
+        id: true,
+        title: true,
+        images: true,
+        listingMode: true,
+        startingBid: true,
+        buyNowPrice: true,
+        size: true,
+        endsAt: true,
+        bidCount: true,
+        views: true,
+        verified: true,
+        hot: true,
+        featured: true,
+        featuredUntil: true,
+        sellerId: true,
+        category: { select: { slug: true, emoji: true, color: true } },
+        seller: {
+          select: {
+            sellerProfile: { select: { storeName: true, storeSlug: true } },
+          },
+        },
+      },
+    });
+    return rows.map((r) => ({
+      ...r,
+      endsAt: r.endsAt.toISOString(),
+      featuredUntil: r.featuredUntil?.toISOString() ?? null,
+    }));
+  },
+  ["homepage-retail-listings"],
   { revalidate: 10 },
 );
 

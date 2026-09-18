@@ -52,6 +52,36 @@ enum OrderStatus {
   CANCELLED
 }
 
+enum ListingMode {
+  AUCTION
+  RETAIL
+  BOTH
+}
+
+enum SellerPlan {
+  FREE
+  BASIC_499
+  PRO_999
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum RetailOrderStatus {
+  PENDING_PAYMENT
+  PAYMENT_VERIFIED
+  ADDRESS_RELEASED
+  PACKED
+  SHIPPED
+  DELIVERED
+  BUYER_CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -110,6 +140,9 @@ model User {
    bids             Bid[]
    buyerOrders      Order[]       @relation("BuyerOrders")
    sellerOrders     Order[]       @relation("SellerOrders")
+   buyerRetailOrders RetailOrder[] @relation("BuyerRetailOrders")
+   sellerRetailOrders RetailOrder[] @relation("SellerRetailOrders")
+   subscriptions    Subscription[]
    addresses        Address[]
    payouts          Payout[]
    supportTickets   SupportTicket[]
@@ -151,7 +184,9 @@ model Listing {
   categoryId    String
   sellerId      String
   images        String[]
+  listingMode   ListingMode   @default(AUCTION)
   startingBid   Int
+  buyNowPrice   Int?
   currentBid    Int?
   bidIncrement  Int           @default(50)
   reservePrice  Int?
@@ -176,6 +211,7 @@ model Listing {
    seller   User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
     bids     Bid[]
     order    Order?
+    retailOrder RetailOrder?
     savedItems SavedItem[]
     featureCharges FeatureCharge[]
     upcomingVotes UpcomingVote[]
@@ -184,6 +220,7 @@ model Listing {
    @@index([categoryId])
    @@index([sellerId])
    @@index([size])
+   @@index([listingMode])
 }
 
 enum ListingCondition {
@@ -309,12 +346,68 @@ model SellerProfile {
   location          String?
   whatsappNumber    String
   returnPolicy      String?
+  plan              SellerPlan      @default(FREE)
+  planExpiresAt     DateTime?
+  listingsUsed      Int             @default(0)
+  storeSlug         String?  @unique
+  storeLogo         String?
+  instagramUrl      String?
+  upiId             String?
   acceptedAgreement Boolean  @default(false)
   acceptedAt        DateTime?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model RetailOrder {
+  id                 String            @id @default(cuid())
+  listingId          String            @unique
+  buyerId            String
+  sellerId           String
+  finalPrice         Int
+  connectionFee      Int               @default(39)
+  status             RetailOrderStatus @default(PENDING_PAYMENT)
+  paymentMethod      String?
+  paymentProofUrl    String?
+  adminVerifiedAt    DateTime?
+  address            Json?
+  buyerPhone         String?
+  trackingNumber     String?
+  trackingUrl        String?
+  shippedAt          DateTime?
+  deliveredAt        DateTime?
+  buyerConfirmedAt   DateTime?
+  completedAt        DateTime?
+  adminNotes         String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  listing Listing @relation(fields: [listingId], references: [id])
+  buyer   User    @relation("BuyerRetailOrders", fields: [buyerId], references: [id])
+  seller  User    @relation("SellerRetailOrders", fields: [sellerId], references: [id])
+
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([status])
+}
+
+model Subscription {
+  id        String             @id @default(cuid())
+  sellerId  String
+  plan      SellerPlan
+  amount    Int
+  status    SubscriptionStatus @default(ACTIVE)
+  startsAt  DateTime           @default(now())
+  endsAt    DateTime
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  seller User @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@index([sellerId])
+  @@index([status])
 }
 
 model CreditPurchase {

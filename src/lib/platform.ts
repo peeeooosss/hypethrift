@@ -1,10 +1,19 @@
 export const ADMIN_WHATSAPP = "919864854481";
 export const ADMIN_UPI_ID = "9864854481@ptsbi";
 export const CONTACT_FEE = 69;
+export const RETAIL_CONNECTION_FEE = 39;
 export const ITEM_PAYMENT_WINDOW_HOURS = 48;
 export const FREE_LISTINGS = 2;
 
 export const DURATION_OPTIONS = [1, 4, 12, 24, 48, 72, 168, 336, 720] as const;
+
+export const SELLER_PLANS = {
+  FREE: { label: "Free Trial", listingLimit: 3, amount: 0 },
+  BASIC_499: { label: "Basic", listingLimit: 15, amount: 499 },
+  PRO_999: { label: "Pro", listingLimit: 40, amount: 999 },
+} as const;
+
+export type SellerPlanId = keyof typeof SELLER_PLANS;
 
 export const LISTING_PACKAGES = [
   { id: "one", label: "1 listing", credits: 1, amount: 99 },

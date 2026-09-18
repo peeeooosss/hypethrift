@@ -27,7 +27,9 @@ export interface Product {
   emoji: string;
   bg: string;
   image?: string | null;
-  bid: number;
+  listingMode?: "AUCTION" | "RETAIL" | "BOTH";
+  bid?: number;
+  buyNowPrice?: number | null;
   time: number;
   bids: number;
   viewers: number;
