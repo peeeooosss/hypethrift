@@ -46,7 +46,7 @@ export async function getSellerRetailOrders(sellerId: string) {
   return rows.map((r) => ({
     ...r,
     total: r.finalPrice + r.connectionFee,
-    addressVisible: ["ADDRESS_RELEASED", "PACKED", "SHIPPED", "DELIVERED", "COMPLETED"].includes(r.status),
+    addressVisible: ["PAYMENT_VERIFIED", "ADDRESS_RELEASED", "PACKED", "SHIPPED", "DELIVERED", "COMPLETED"].includes(r.status),
   }));
 }
 

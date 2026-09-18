@@ -174,7 +174,7 @@ export async function verifyRetailPayment(formData: FormData) {
   await prisma.retailOrder.updateMany({
     where: { id: orderId, status: "PENDING_PAYMENT" },
     data: {
-      status: "ADDRESS_RELEASED",
+      status: "PAYMENT_VERIFIED",
       adminVerifiedAt: new Date(),
     },
   });
@@ -242,7 +242,7 @@ export async function packRetailOrder(formData: FormData) {
   const orderId = formData.get("orderId")?.toString();
   if (!orderId) return;
   const result = await sellerRetailOrder(orderId);
-  if (!result || !["ADDRESS_RELEASED", "PACKED"].includes(result.order.status)) {
+  if (!result || !["PAYMENT_VERIFIED", "PACKED"].includes(result.order.status)) {
     redirect("/seller/retail-orders?error=not_ready");
   }
   await prisma.retailOrder.update({ where: { id: orderId }, data: { status: "PACKED" } });
@@ -256,7 +256,7 @@ export async function shipRetailOrder(formData: FormData) {
   const orderId = formData.get("orderId")?.toString();
   if (!orderId) return;
   const result = await sellerRetailOrder(orderId);
-  if (!result || !["PACKED", "ADDRESS_RELEASED"].includes(result.order.status)) {
+  if (!result || !["PACKED", "PAYMENT_VERIFIED"].includes(result.order.status)) {
     redirect("/seller/retail-orders?error=not_ready");
   }
   const trackingNumber = formData.get("trackingNumber")?.toString();
