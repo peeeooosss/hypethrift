@@ -9,6 +9,9 @@ import { RETAIL_CONNECTION_FEE } from "@/lib/platform";
 import BidForm from "@/components/listing/BidForm";
 import BidHistory from "@/components/listing/BidHistory";
 import SaveButton from "@/components/listing/SaveButton";
+import { AddToCartButton } from "@/components/commerce/AddToCartButton";
+import CountdownTimer from "@/components/ui/CountdownTimer";
+import { Badge } from "@/components/ui/badge";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -16,15 +19,6 @@ export const revalidate = 0;
 function money(n: number | null | undefined) {
   if (n == null) return "—";
   return `₹${n.toLocaleString("en-IN")}`;
-}
-
-function timeRemaining(end: string) {
-  const ms = new Date(end).getTime() - Date.now();
-  if (ms <= 0) return "Ended";
-  const h = Math.floor(ms / (1000 * 60 * 60));
-  const m = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
-  const s = Math.floor((ms % (1000 * 60)) / 1000);
-  return `${h}h ${m}m ${s}s`;
 }
 
 export default async function ListingDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -88,10 +82,22 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
   ]);
 
   return (
-    <div className="space-y-8">
+    <div className="container-page space-y-8 py-8">
+      <div className="flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-widest text-ink/45">
+        <Link href="/" className="hover:text-ink">Mall</Link>
+        <span>/</span>
+        <Link href={`/mall/${listing.category.slug}`} className="hover:text-ink">{listing.category.name}</Link>
+        <span>/</span>
+        <span className="truncate text-ink">{listing.title}</span>
+      </div>
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
         <div className="bg-white border-2 border-ink shadow-brut-2xl rounded-3xl p-6">
+          <div className="mb-4 flex flex-wrap gap-2">
+            <Badge tone="pink">{listing.listingMode === "RETAIL" ? "Buy now" : listing.listingMode === "BOTH" ? "Bid or buy" : "Live auction"}</Badge>
+            {listing.verified && <Badge tone="acid">Authenticated</Badge>}
+            {listing.featured && <Badge tone="gold">Featured</Badge>}
+          </div>
           <div className="relative">
             {listing.images.length > 0 ? (
               <>
@@ -173,9 +179,16 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
           )}
 
           <div className="bg-ink/5 border-2 border-dashed border-ink/20 rounded-xl py-3 text-center mb-6">
-            <span className="font-black text-bubblegum">
-              {listing.status === "UPCOMING" ? "Bids open when this drop goes live" : `Time left: ${timeRemaining(listing.endsAt.toString())}`}
-            </span>
+            {listing.status === "UPCOMING" ? (
+              <span className="font-black text-bubblegum">Bids open when this drop goes live</span>
+            ) : listing.status === "ACTIVE" && !isEnded ? (
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-xs font-black uppercase text-gray-500">Time left</span>
+                <CountdownTimer deadline={listing.endsAt} showLabel={false} compact />
+              </div>
+            ) : (
+              <span className="font-black text-bubblegum">{isEnded ? "Auction ended" : listing.status.replace("_", " ")}</span>
+            )}
           </div>
 
           {listing.status === "UPCOMING" ? (
@@ -201,12 +214,23 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
                   Sign in to buy · ₹{listing.buyNowPrice?.toLocaleString("en-IN")} + ₹{RETAIL_CONNECTION_FEE} fee
                 </Link>
               ) : session.user.role === "CUSTOMER" ? (
-                <Link
-                  href={`/checkout/retail/${encodeURIComponent(listing.id)}`}
-                  className="block text-center bg-bubblegum border-2 border-ink shadow-brut-md py-3 rounded-2xl font-black uppercase text-sm hover:bg-acid hover:text-ink transition-colors"
-                >
-                  🛍️ Buy Now · ₹{listing.buyNowPrice?.toLocaleString("en-IN")} + ₹{RETAIL_CONNECTION_FEE} fee
-                </Link>
+                <div className="space-y-2">
+                  <AddToCartButton
+                    listingId={listing.id}
+                    title={listing.title}
+                    price={listing.buyNowPrice ?? 0}
+                    image={listing.images[0] ?? null}
+                    size={listing.size}
+                    seller={listing.seller.sellerProfile?.storeName ?? listing.seller.name}
+                    zone={listing.category.name}
+                  />
+                  <Link
+                    href={`/checkout/retail/${encodeURIComponent(listing.id)}`}
+                    className="block text-center bg-bubblegum border-2 border-ink shadow-brut-md py-3 rounded-2xl font-black uppercase text-sm hover:bg-acid hover:text-ink transition-colors"
+                  >
+                    🛍️ Buy Now · ₹{listing.buyNowPrice?.toLocaleString("en-IN")} + ₹{RETAIL_CONNECTION_FEE} fee
+                  </Link>
+                </div>
               ) : (
                 <p className="text-center text-gray-500 font-bold uppercase">
                   {session.user.role === "ADMIN" ? "Admins cannot buy" : "Buyer accounts only"}

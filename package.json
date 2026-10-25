@@ -15,8 +15,12 @@
     "@hookform/resolvers": "^5.9.1",
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
+    "@react-three/drei": "^10.7.9",
+    "@react-three/fiber": "^9.8.2",
     "@uploadthing/react": "^7.3.3",
     "bcryptjs": "^3.0.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "dotenv": "^17.4.2",
     "framer-motion": "^12.4.7",
     "lucide-react": "^0.468.0",
@@ -25,8 +29,11 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.86.0",
+    "tailwind-merge": "^3.4.0",
+    "three": "^0.186.1",
     "uploadthing": "^7.7.4",
-    "zod": "^4.4.3"
+    "zod": "^4.4.3",
+    "zustand": "^5.0.16"
   },
   "overrides": {
     "debug": "4.3.4"

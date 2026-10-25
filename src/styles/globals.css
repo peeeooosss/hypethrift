@@ -1,6 +1,16 @@
+@import url("https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --ink: #121212;
+  --cream: #f4f0ea;
+  --acid: #d4ff33;
+  --bubblegum: #ff66b2;
+  --aqua: #33ccff;
+  --paper: #ffffff;
+}
 
 * {
   -webkit-tap-highlight-color: transparent;
@@ -12,10 +22,30 @@ html {
 
 body {
   @apply bg-cream text-ink font-sans antialiased;
+  background-image: radial-gradient(rgba(18, 18, 18, 0.08) 0.6px, transparent 0.6px);
+  background-size: 18px 18px;
+}
+
+::selection {
+  background: var(--acid);
+  color: var(--ink);
+}
+
+@layer base {
+  h1,
+  h2,
+  h3,
+  .font-display {
+    letter-spacing: -0.035em;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--bubblegum);
+    outline-offset: 3px;
+  }
 }
 
 @layer components {
-  /* Animated gradient sheen used by the primary bid CTA */
   .shine-btn {
     background: linear-gradient(90deg, #d4ff33 0%, #e8ff7a 50%, #d4ff33 100%);
     background-size: 200% auto;
@@ -25,10 +55,32 @@ body {
   .live-dot {
     animation: pulse-live 1.5s ease-in-out infinite;
   }
+
+  .container-page {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .brut-press {
+    @apply transition-all duration-150 hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-brut-sm active:translate-x-[4px] active:translate-y-[4px] active:shadow-none;
+  }
+
+  .hud-panel {
+    @apply border-2 border-ink bg-cream/90 shadow-brut-md backdrop-blur-md;
+  }
+
+  .label {
+    @apply text-[10px] font-black uppercase tracking-[0.2em] text-ink/55;
+  }
+
+  .mall-grid {
+    background-image:
+      linear-gradient(rgba(18, 18, 18, 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(18, 18, 18, 0.08) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
 }
 
 @layer utilities {
-  /* Hides scrollbars while keeping horizontal scroll (category pills) */
   .hide-scrollbar::-webkit-scrollbar {
     display: none;
   }
@@ -36,5 +88,24 @@ body {
   .hide-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
