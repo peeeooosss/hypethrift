@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Search, SlidersHorizontal } from "lucide-react";
-import { prisma, type ListingMode } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
+import type { ListingMode } from "@/prisma/generated/client/enums";
 import { auth } from "@/lib/auth";
 import { ListingCard, type ListingCardData } from "@/components/commerce/ListingCard";
 import UpcomingSection, { type UpcomingItem } from "@/components/home/UpcomingSection";
