@@ -121,7 +121,7 @@ export function MallExperience({ showcase }: { showcase: MallShowcase }) {
           </div>
 
           {!entered && (
-            <div className="absolute inset-0 flex items-center justify-center bg-mall-night/65 p-4 backdrop-blur-[3px]">
+            <div className="pointer-events-auto absolute inset-0 flex items-center justify-center bg-mall-night/65 p-4 backdrop-blur-[3px]">
               <div className="w-full max-w-xl rounded-[2rem] border-2 border-white bg-cream p-6 text-ink shadow-[10px_10px_0_#D4FF33] md:p-9">
                 <div className="flex items-center justify-between">
                   <span className="rounded-full border-2 border-ink bg-acid px-3 py-1 text-[9px] font-black uppercase tracking-[0.2em]">
