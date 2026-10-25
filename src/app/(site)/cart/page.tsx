@@ -18,7 +18,7 @@ export default function CartPage() {
           <p className="label">Your bag</p>
           <h1 className="mt-1 font-display text-5xl uppercase leading-none">Bag check.</h1>
         </div>
-        <Link href="/listings?mode=retail" className={cn(buttonVariants({ variant: "secondary" }))}>
+        <Link href="/listings?mode=retail" className={cn(buttonVariants({ variant: "outline" }))}>
           Keep shopping
         </Link>
       </div>
@@ -30,7 +30,7 @@ export default function CartPage() {
           <p className="mt-2 text-sm font-bold text-ink/50">Every piece is one-of-one. If you like it, grab it.</p>
           <div className="mt-6 flex flex-wrap justify-center gap-2">
             <Link href="/listings?mode=retail" className={cn(buttonVariants({ variant: "primary" }))}>Shop Buy Now</Link>
-            <Link href="/listings?mode=auction" className={cn(buttonVariants({ variant: "secondary" }))}>Live auctions</Link>
+            <Link href="/listings?mode=auction" className={cn(buttonVariants({ variant: "outline" }))}>Live auctions</Link>
           </div>
         </div>
       ) : (
