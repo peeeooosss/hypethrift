@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Search, SlidersHorizontal } from "lucide-react";
-import { prisma } from "@/lib/prisma";
+import { prisma, type ListingMode } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { ListingCard, type ListingCardData } from "@/components/commerce/ListingCard";
 import UpcomingSection, { type UpcomingItem } from "@/components/home/UpcomingSection";
@@ -20,8 +20,8 @@ type Mode = "auction" | "retail";
 
 function modeFilter(mode: Mode) {
   return mode === "retail"
-    ? { listingMode: { in: ["RETAIL", "BOTH"] }, buyNowPrice: { not: null } }
-    : { listingMode: { in: ["AUCTION", "BOTH"] } };
+    ? { listingMode: { in: ["RETAIL", "BOTH"] as ListingMode[] }, buyNowPrice: { not: null } }
+    : { listingMode: { in: ["AUCTION", "BOTH"] as ListingMode[] } };
 }
 
 export default async function ListingsPage({
