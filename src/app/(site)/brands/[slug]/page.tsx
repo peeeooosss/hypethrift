@@ -68,7 +68,7 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
             </div>
             <div className="flex flex-wrap gap-2">
               <Badge tone="ink">{brand.tier}</Badge>
-              <Badge tone="cream">{brand.category}</Badge>
+              <Badge tone="lilac">{brand.category}</Badge>
             </div>
           </div>
         </div>
