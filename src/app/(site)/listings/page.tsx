@@ -20,8 +20,8 @@ type Mode = "auction" | "retail";
 
 function modeFilter(mode: Mode) {
   return mode === "retail"
-    ? { listingMode: { in: ["RETAIL", "BOTH"] as const }, buyNowPrice: { not: null } }
-    : { listingMode: { in: ["AUCTION", "BOTH"] as const } };
+    ? { listingMode: { in: ["RETAIL", "BOTH"] }, buyNowPrice: { not: null } }
+    : { listingMode: { in: ["AUCTION", "BOTH"] } };
 }
 
 export default async function ListingsPage({
