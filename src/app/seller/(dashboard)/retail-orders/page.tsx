@@ -9,7 +9,7 @@ import RetailSellerOrderCard from "@/components/seller/RetailSellerOrderCard";
 
 export const revalidate = 0;
 
-export const RETAIL_SELLER_FLOW: RetailOrderStatus[] = ["PENDING_PAYMENT", "PAYMENT_VERIFIED", "PACKED", "SHIPPED", "DELIVERED", "COMPLETED"];
+const RETAIL_SELLER_FLOW: RetailOrderStatus[] = ["PENDING_PAYMENT", "PAYMENT_VERIFIED", "PACKED", "SHIPPED", "DELIVERED", "COMPLETED"];
 
 function money(n: number) {
   return `₹${n.toLocaleString("en-IN")}`;
