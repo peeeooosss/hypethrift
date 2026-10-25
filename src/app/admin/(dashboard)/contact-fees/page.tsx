@@ -41,7 +41,7 @@ export default async function AdminContactFeesPage() {
                  <td className="py-3">
                   {order.proofUrl ? (
                     <a href={order.proofUrl} target="_blank" rel="noopener noreferrer">
-/* eslint-disable @next/next/no-img-element */
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={order.proofUrl} alt="Payment proof" className="w-12 h-12 rounded-lg border-2 border-ink object-cover hover:scale-110 transition-transform" />
                     </a>
                   ) : (

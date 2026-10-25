@@ -15,9 +15,8 @@ export default function ProofUpload({ onUploadComplete, helperText }: ProofUploa
     <div className="space-y-3">
       {proofUrl ? (
         <div className="flex items-center gap-3">
-          {/* eslint-disable react/no-unescaped-entities */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={proofUrl} alt="Payment proof" className="w-20 h-20 rounded-xl border-2 border-ink object-cover" />
-          {/* eslint-enable react/no-unescaped-entities */}
           <div>
             <p className="text-sm font-black text-green-700">Screenshot uploaded</p>
             <button
