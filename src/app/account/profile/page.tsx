@@ -57,6 +57,7 @@ export default async function AccountProfilePage() {
         <h1 className="text-3xl font-black uppercase mb-2">My Profile</h1>
         <div className="flex items-center gap-4 mt-4">
           {user.image ? (
+/* eslint-disable @next/next/no-img-element */
             <img src={user.image} alt={user.name ?? ""} className="w-16 h-16 rounded-full object-cover border-2 border-ink" />
           ) : (
             <div className="w-16 h-16 rounded-full border-2 border-ink bg-ink/5 flex items-center justify-center text-3xl">{user.name?.[0] ?? "👤"}</div>
@@ -140,6 +141,7 @@ export default async function AccountProfilePage() {
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       {order.listing.images?.[0] ? (
+/* eslint-disable @next/next/no-img-element */
                         <img
                           src={order.listing.images[0]}
                           alt={order.listing.title}

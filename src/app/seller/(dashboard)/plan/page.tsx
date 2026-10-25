@@ -139,8 +139,8 @@ export default async function SellerPlanPage({
       <div className="bg-ink text-white border-2 border-ink rounded-3xl p-5">
         <p className="font-black uppercase">How Buy Now works</p>
         <p className="text-sm font-bold text-gray-300 mt-1">
-          Buyers pay the full item price and a ₹{RETAIL_CONNECTION_FEE} connection fee. HypeThrift is the trusted middleman:
-          we verify payment, share the buyer's address with you, and track the delivery to ✓ your payout.
+Buyers pay the full item price and a ₹{RETAIL_CONNECTION_FEE} connection fee. HypeThrift is the trusted middleman:
+        we verify payment, share the buyer address with you, and track the delivery to ✓ your payout.
         </p>
       </div>
 
