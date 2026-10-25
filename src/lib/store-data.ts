@@ -18,7 +18,7 @@ export const getStoreBySlug = unstable_cache(
     });
   },
   ["store-by-slug"],
-  { revalidate: 0 },
+  { revalidate: false },
 );
 
 export const getStoreListings = unstable_cache(
@@ -55,7 +55,7 @@ export const getStoreListings = unstable_cache(
     }));
   },
   ["store-listings"],
-  { revalidate: 0 },
+  { revalidate: false },
 );
 
 export function slugifyStoreName(name: string) {

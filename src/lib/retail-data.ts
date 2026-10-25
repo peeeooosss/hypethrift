@@ -70,7 +70,7 @@ export const getRetailOrdersAdmin = unstable_cache(
     return rows.map((r) => ({ ...r, total: r.finalPrice + r.connectionFee }));
   },
   ["admin-retail-orders"],
-  { revalidate: 0 },
+  { revalidate: false },
 );
 
 export async function getEligibleRetailPayouts() {
